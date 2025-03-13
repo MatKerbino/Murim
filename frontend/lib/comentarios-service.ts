@@ -22,10 +22,17 @@ export interface Comentario {
 export const comentariosService = {
   async getComentarios(dicaId: number): Promise<Comentario[]> {
     try {
-      const response = await axios.get<{ status: string; data: Comentario[] }>(`${API_URL}/dicas/${dicaId}/comentarios`)
-      return response.data.data
+      const url = `${API_URL}/dicas/${dicaId}/comentarios`;
+      console.log("URL chamada:", url);
+      const response = await axios.get<{ status: string; data: Comentario[] }>(url);
+      return response.data.data;
     } catch (error) {
-      throw error
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        console.warn("Nenhum comentário encontrado para esta dica.");
+        return [];
+      }
+      console.error("Erro ao buscar comentários:", error);
+      throw error;
     }
   },
 

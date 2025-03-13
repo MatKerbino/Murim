@@ -1,366 +1,183 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useParams } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Textarea } from "@/components/ui/textarea"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Button } from "@/components/ui/button"
 import { ErrorMessage } from "@/components/ui/error-message"
-import { toast } from "@/components/ui/use-toast"
 import { dicasService } from "@/lib/dicas-service"
-import { comentariosService } from "@/lib/comentarios-service"
-import { curtidasService } from "@/lib/curtidas-service"
 import { useAuth } from "@/contexts/auth-context"
-import { MessageCircle, ThumbsUp, Calendar, User, Tag, ArrowLeft, Trash2 } from "lucide-react"
+import { MessageCircle, ThumbsUp, Calendar, User, Tag } from "lucide-react"
 import type { Dica } from "@/lib/dicas-service"
-import type { Comentario } from "@/lib/comentarios-service"
-import type { ApiError } from "@/lib/api"
+import { EmptyState } from "@/components/ui/empty-state"
 
-export default function DicaDetalhesPage() {
-  const { id } = useParams()
-  const [dica, setDica] = useState<Dica | null>(null)
-  const [comentarios, setComentarios] = useState<Comentario[]>([])
-  const [novoComentario, setNovoComentario] = useState("")
+export default function DicasPage() {
+  return (
+    <div className="container py-10">
+      <div className="flex flex-col items-center justify-center space-y-4 text-center mb-10">
+        <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-primary">Blog de Dicas</h1>
+        <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
+          Confira nossas dicas sobre desempenho, nutrição e vestuário para melhorar seus resultados.
+        </p>
+      </div>
+      <DicasContent />
+    </div>
+  )
+}
+
+export function DicasContent() {
+  const [dicas, setDicas] = useState<Dica[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [curtidaStatus, setCurtidaStatus] = useState({ curtido: false, total_curtidas: 0 })
-  const { isAuthenticated, user } = useAuth()
+  const [activeTab, setActiveTab] = useState("todas")
+  const { isAuthenticated } = useAuth()
 
   useEffect(() => {
-    async function loadDica() {
+    async function loadDicas() {
       setIsLoading(true)
       setError(null)
       try {
-        const dicaData = await dicasService.getDica(Number(id))
-        setDica(dicaData)
-
-        // Carregar comentários
-        const comentariosData = await comentariosService.getComentarios(Number(id))
-        setComentarios(comentariosData)
-
-        // Verificar status de curtida se o usuário estiver autenticado
-        if (isAuthenticated) {
-          const curtidaData = await curtidasService.verificarCurtida(Number(id))
-          setCurtidaStatus(curtidaData)
-        }
+        console.log("Carregando dicas...")
+        const data = await dicasService.getDicas()
+        console.log("Dicas carregadas:", data)
+        setDicas(data)
       } catch (error) {
-        console.error("Erro ao carregar dica:", error)
-        setError((error as ApiError).message || "Não foi possível carregar a dica. Tente novamente mais tarde.")
+        console.error("Erro ao carregar dicas:", error)
       } finally {
         setIsLoading(false)
       }
     }
 
-    if (id) {
-      loadDica()
-    }
-  }, [id, isAuthenticated])
+    loadDicas()
+  }, [])
 
-  const handleComentarioSubmit = async () => {
-    if (!isAuthenticated) {
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Você precisa estar logado para comentar.",
-      })
-      return
-    }
-
-    if (!novoComentario.trim() || novoComentario.length < 3) {
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "O comentário deve ter pelo menos 3 caracteres.",
-      })
-      return
-    }
-
-    setIsSubmitting(true)
-
-    try {
-      const comentario = await comentariosService.criarComentario(Number(id), novoComentario)
-      setComentarios([comentario, ...comentarios])
-      setNovoComentario("")
-      toast({
-        title: "Sucesso",
-        description: "Comentário adicionado com sucesso.",
-      })
-    } catch (error) {
-      console.error("Erro ao adicionar comentário:", error)
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Não foi possível adicionar o comentário. Tente novamente.",
-      })
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const handleCurtida = async () => {
-    if (!isAuthenticated) {
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Você precisa estar logado para curtir.",
-      })
-      return
-    }
-
-    try {
-      const novoStatus = await curtidasService.toggleCurtida(Number(id))
-      setCurtidaStatus(novoStatus)
-    } catch (error) {
-      console.error("Erro ao curtir/descurtir:", error)
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Não foi possível processar sua curtida. Tente novamente.",
-      })
-    }
-  }
-
-  const handleExcluirComentario = async (comentarioId: number) => {
-    if (!isAuthenticated) return
-
-    try {
-      await comentariosService.excluirComentario(comentarioId)
-      setComentarios(comentarios.filter((c) => c.id !== comentarioId))
-      toast({
-        title: "Sucesso",
-        description: "Comentário excluído com sucesso.",
-      })
-    } catch (error) {
-      console.error("Erro ao excluir comentário:", error)
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Não foi possível excluir o comentário. Tente novamente.",
-      })
-    }
-  }
-
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((word) => word[0])
-      .join("")
-      .toUpperCase()
-      .substring(0, 2)
-  }
-
-  if (isLoading) {
-    return <DicaLoading />
-  }
-
-  if (error || !dica) {
-    return (
-      <ErrorMessage
-        title="Erro ao carregar dica"
-        message={error || "Dica não encontrada"}
-        onRetry={() => window.location.reload()}
-      />
-    )
-  }
+  const filteredDicas = dicas.filter((dica) => {
+    if (activeTab === "todas") return true
+    return dica.categoria?.slug === activeTab
+  })
 
   return (
-    <div className="container py-10">
-      <Link href="/dicas" className="flex items-center text-primary hover:underline mb-6">
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Voltar para todas as dicas
-      </Link>
+    <div className="w-full">
+      <Tabs defaultValue="todas" value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="todas">Todas</TabsTrigger>
+          <TabsTrigger value="desempenho">Desempenho</TabsTrigger>
+          <TabsTrigger value="nutricao">Nutrição</TabsTrigger>
+          <TabsTrigger value="vestuario">Vestuário</TabsTrigger>
+        </TabsList>
 
-      <Card className="border shadow-sm overflow-hidden">
-        {dica.imagem && (
-          <div className="relative h-64 w-full overflow-hidden">
-            <Image
-              src={dica.imagem || `/placeholder.svg?height=300&width=800&text=${encodeURIComponent(dica.titulo)}`}
-              alt={dica.titulo}
-              fill
-              className="object-cover"
-            />
-          </div>
-        )}
-
-        <CardHeader>
-          <div className="flex items-center gap-2 mb-2">
-            <Tag className="h-4 w-4 text-primary" />
-            <span className="text-xs text-primary font-medium">{dica.categoria?.nome}</span>
-          </div>
-          <CardTitle className="text-2xl md:text-3xl">{dica.titulo}</CardTitle>
-          <CardDescription className="text-base">{dica.descricao}</CardDescription>
-
-          <div className="flex items-center mt-4 space-x-4">
-            <div className="flex items-center space-x-1">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">
-                {new Date(dica.created_at).toLocaleDateString("pt-BR")}
-              </span>
-            </div>
-            <div className="flex items-center space-x-1">
-              <User className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">{dica.autor}</span>
-            </div>
-          </div>
-        </CardHeader>
-
-        <CardContent className="space-y-6">
-          <div className="prose max-w-none dark:prose-invert">
-            {dica.conteudo.split("\n").map((paragraph, index) => (
-              <p key={index}>{paragraph}</p>
-            ))}
-          </div>
-
-          <div className="flex items-center justify-between pt-4 border-t">
-            <div className="flex items-center gap-2">
-              <Button
-                variant={curtidaStatus.curtido ? "default" : "outline"}
-                size="sm"
-                onClick={handleCurtida}
-                className={curtidaStatus.curtido ? "bg-primary text-primary-foreground" : ""}
-              >
-                <ThumbsUp className={`h-4 w-4 mr-2 ${curtidaStatus.curtido ? "fill-current" : ""}`} />
-                {curtidaStatus.total_curtidas} {curtidaStatus.total_curtidas === 1 ? "Curtida" : "Curtidas"}
-              </Button>
-
-              <Button variant="outline" size="sm">
-                <MessageCircle className="h-4 w-4 mr-2" />
-                {comentarios.length} {comentarios.length === 1 ? "Comentário" : "Comentários"}
-              </Button>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" asChild>
-                <Link href={`/dicas?categoria=${dica.categoria?.slug}`}>Mais sobre {dica.categoria?.nome}</Link>
-              </Button>
-            </div>
-          </div>
-
-          <div className="pt-6 border-t">
-            <h3 className="text-lg font-medium mb-4">Comentários</h3>
-
-            {isAuthenticated ? (
-              <div className="mb-6">
-                <Textarea
-                  placeholder="Escreva seu comentário..."
-                  value={novoComentario}
-                  onChange={(e) => setNovoComentario(e.target.value)}
-                  className="mb-2"
-                  rows={3}
-                />
-                <Button onClick={handleComentarioSubmit} disabled={isSubmitting}>
-                  {isSubmitting ? "Enviando..." : "Comentar"}
-                </Button>
-              </div>
-            ) : (
-              <div className="bg-muted p-4 rounded-md mb-6">
-                <p className="text-sm text-muted-foreground">
-                  <Link href="/login" className="text-primary hover:underline">
-                    Faça login
-                  </Link>{" "}
-                  para deixar um comentário.
-                </p>
-              </div>
-            )}
-
-            {comentarios.length > 0 ? (
-              <div className="space-y-4">
-                {comentarios.map((comentario) => (
-                  <div key={comentario.id} className="p-4 border rounded-md">
-                    <div className="flex items-start gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback>{getInitials(comentario.user?.name || "Usuário")}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <p className="font-medium">{comentario.user?.name || "Usuário"}</p>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(comentario.created_at).toLocaleDateString("pt-BR")}
-                          </span>
-                        </div>
-                        <p className="text-sm mt-1">{comentario.conteudo}</p>
-                      </div>
-
-                      {(user?.id === comentario.user_id || user?.is_admin) && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                          onClick={() => handleExcluirComentario(comentario.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
+        <TabsContent value={activeTab} className="mt-6">
+          {isLoading ? (
+            <DicasLoading />
+          ) : error ? (
+            <ErrorMessage title="Erro ao carregar dicas" message={error} onRetry={() => window.location.reload()} />
+          ) : filteredDicas.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredDicas.map((dica) => (
+                <Card
+                  key={dica.id}
+                  className="border shadow-sm overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:shadow-lg"
+                >
+                  <div className="relative h-48 w-full overflow-hidden">
+                    <Image
+                      src={
+                        dica.imagem || `/placeholder.svg?height=300&width=500&text=${encodeURIComponent(dica.titulo)}`
+                      }
+                      alt={dica.titulo}
+                      fill
+                      className="object-cover transition-transform duration-500 hover:scale-110"
+                    />
                   </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-center py-4">
-                Nenhum comentário ainda. Seja o primeiro a comentar!
-              </p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Tag className="h-4 w-4 text-primary" />
+                      <span className="text-xs text-primary font-medium">{dica.categoria?.nome}</span>
+                    </div>
+                    <CardTitle className="text-xl">{dica.titulo}</CardTitle>
+                    <CardDescription>{dica.descricao}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground line-clamp-3">{dica.conteudo}</p>
+
+                    <div className="flex items-center mt-4 space-x-4">
+                      <div className="flex items-center space-x-1">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(dica.created_at).toLocaleDateString("pt-BR")}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">{dica.autor}</span>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex justify-between items-center">
+                      <Link href={`/dicas/${dica.id}`}>
+                        <Button variant="link" className="p-0 h-auto text-primary">
+                          Ler mais
+                        </Button>
+                      </Link>
+
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="sm" className="h-8 text-xs">
+                          <MessageCircle className="h-3 w-3 mr-1" />
+                          Comentários
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-8 text-xs">
+                          <ThumbsUp className="h-3 w-3 mr-1" />
+                          Curtir
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <EmptyState 
+              title="Nenhuma dica encontrada" 
+              description="Não encontramos nenhuma dica nesta categoria. Tente selecionar outra categoria ou volte mais tarde."
+              actionLabel="Ver todas as categorias"
+              onAction={() => setActiveTab("todas")}
+            />
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
 
-function DicaLoading() {
+function DicasLoading() {
   return (
-    <div className="container py-10">
-      <div className="mb-6">
-        <Skeleton className="h-6 w-32" />
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <Skeleton className="h-10 w-[250px]" />
+        <Skeleton className="h-4 w-[300px]" />
       </div>
-
-      <Card className="border shadow-sm overflow-hidden">
-        <Skeleton className="h-64 w-full" />
-
-        <CardHeader>
-          <Skeleton className="h-4 w-20 mb-2" />
-          <Skeleton className="h-8 w-3/4 mb-2" />
-          <Skeleton className="h-4 w-full" />
-
-          <div className="flex items-center mt-4 space-x-4">
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-4 w-24" />
-          </div>
-        </CardHeader>
-
-        <CardContent className="space-y-6">
-          <div className="space-y-4">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-3/4" />
-          </div>
-
-          <div className="flex items-center justify-between pt-4 border-t">
-            <div className="flex items-center gap-2">
-              <Skeleton className="h-8 w-24" />
-              <Skeleton className="h-8 w-24" />
-            </div>
-
-            <Skeleton className="h-8 w-32" />
-          </div>
-
-          <div className="pt-6 border-t">
-            <Skeleton className="h-6 w-32 mb-4" />
-            <Skeleton className="h-24 w-full mb-6" />
-
-            <div className="space-y-4">
-              <Skeleton className="h-24 w-full" />
-              <Skeleton className="h-24 w-full" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {Array(6)
+          .fill(0)
+          .map((_, i) => (
+            <Card key={i} className="border shadow-sm overflow-hidden">
+              <Skeleton className="h-48 w-full" />
+              <CardHeader>
+                <Skeleton className="h-6 w-[200px]" />
+                <Skeleton className="h-4 w-[150px]" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-24 w-full" />
+                <div className="mt-4 space-y-2">
+                  <Skeleton className="h-4 w-[100px]" />
+                  <Skeleton className="h-8 w-full" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+      </div>
     </div>
   )
 }

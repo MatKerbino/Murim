@@ -12,6 +12,9 @@ export const curtidasService = {
       const response = await axios.get<{ status: string; data: CurtidaStatus }>(`${API_URL}/dicas/${dicaId}/curtida`)
       return response.data.data
     } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        return { curtido: false, total_curtidas: 0 }
+      }
       throw error
     }
   },

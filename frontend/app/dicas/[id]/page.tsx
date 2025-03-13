@@ -19,6 +19,8 @@ import { MessageCircle, ThumbsUp, Calendar, User, Tag, ArrowLeft, Trash2 } from 
 import type { Dica } from "@/lib/dicas-service"
 import type { Comentario } from "@/lib/comentarios-service"
 import type { ApiError } from "@/lib/api"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { EmptyState } from "@/components/ui/empty-state"
 
 export default function DicaDetalhesPage() {
   const { id } = useParams()
@@ -30,6 +32,8 @@ export default function DicaDetalhesPage() {
   const [error, setError] = useState<string | null>(null)
   const [curtidaStatus, setCurtidaStatus] = useState({ curtido: false, total_curtidas: 0 })
   const { isAuthenticated, user } = useAuth()
+  const [activeTab, setActiveTab] = useState("todas")
+  const [comentariosLoading, setComentariosLoading] = useState(true)
 
   useEffect(() => {
     async function loadDica() {
@@ -41,6 +45,7 @@ export default function DicaDetalhesPage() {
 
         // Carregar comentários
         const comentariosData = await comentariosService.getComentarios(Number(id))
+        console.log("Comentários:", comentariosData)
         setComentarios(comentariosData)
 
         // Verificar status de curtida se o usuário estiver autenticado
@@ -268,7 +273,9 @@ export default function DicaDetalhesPage() {
               </div>
             )}
 
-            {comentarios.length > 0 ? (
+            {comentariosLoading ? (
+              <Skeleton className="h-6 w-32" />
+            ) : comentarios.length > 0 ? (
               <div className="space-y-4">
                 {comentarios.map((comentario) => (
                   <div key={comentario.id} className="p-4 border rounded-md">

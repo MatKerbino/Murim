@@ -56,6 +56,7 @@ Route::get('/categorias-dicas', [CategoriaDicaController::class, 'index']);
 
 // Comentários públicos
 Route::get('/dicas/{dicaId}/comentarios', [ComentarioController::class, 'index']);
+Route::get('/dicas/{dicaId}/curtidas', [CurtidaController::class, 'verificar']);
 
 // Rotas protegidas por autenticação
 Route::middleware('auth:api')->group(function () {
@@ -75,7 +76,6 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/dicas/{dicaId}/comentarios', [ComentarioController::class, 'store']);
     Route::delete('/comentarios/{id}', [ComentarioController::class, 'destroy']);
     Route::post('/dicas/{dicaId}/curtir', [CurtidaController::class, 'toggle']);
-    Route::get('/dicas/{dicaId}/curtida', [CurtidaController::class, 'verificar']);
     
     // Rotas para vendas
     Route::post('/vendas', [VendaController::class, 'store']);

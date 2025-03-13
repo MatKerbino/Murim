@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Models\Dica;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class DicaController extends Controller
 {
@@ -12,104 +14,88 @@ class DicaController extends Controller
      */
     public function index()
     {
-        // Since we don't have actual database models yet, return mock data
-        return response()->json([
-            'data' => [
-                [
-                    'id' => 1,
-                    'titulo' => 'Dica de Treino',
-                    'descricao' => 'Como melhorar seu desempenho',
-                    'conteudo' => 'Mantenha a consistência nos treinos para ver resultados.',
-                    'autor' => 'Treinador Silva',
-                    'categoria' => [
-                        'id' => 1,
-                        'nome' => 'Desempenho',
-                        'slug' => 'desempenho'
-                    ],
-                    'created_at' => '2024-03-01T12:00:00.000000Z'
-                ],
-                [
-                    'id' => 2,
-                    'titulo' => 'Alimentação Pré-treino',
-                    'descricao' => 'O que comer antes do treino',
-                    'conteudo' => 'Consuma carboidratos de digestão rápida 30 minutos antes do treino.',
-                    'autor' => 'Nutricionista Oliveira',
-                    'categoria' => [
-                        'id' => 2,
-                        'nome' => 'Nutrição',
-                        'slug' => 'nutricao'
-                    ],
-                    'created_at' => '2024-03-02T14:30:00.000000Z'
-                ],
-                [
-                    'id' => 3,
-                    'titulo' => 'Escolha do calçado',
-                    'descricao' => 'Como escolher o tênis ideal',
-                    'conteudo' => 'Escolha tênis específicos para o tipo de treino que você realiza.',
-                    'autor' => 'Especialista em Vestuário',
-                    'categoria' => [
-                        'id' => 3,
-                        'nome' => 'Vestuário',
-                        'slug' => 'vestuario'
-                    ],
-                    'created_at' => '2024-03-03T09:15:00.000000Z'
-                ],
-            ]
+        $dicas = Dica::with(['categoria', 'comentarios', 'curtidas'])->get(); // Carrega dicas com categorias, comentários e curtidas
+        return response()->json(['data' => $dicas], 200);
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'titulo' => 'required|string|max:255',
+            'descricao' => 'required|string',
+            'conteudo' => 'required|string',
+            'autor' => 'required|string|max:255',
+            'categoria_id' => 'required|exists:categorias_dicas,id', // Verifica se a categoria existe
+            'imagem' => 'nullable|string', // Adiciona validação para imagem, se necessário
+            'publicado' => 'boolean', // Adiciona validação para o campo publicado
         ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $dica = Dica::create($request->all()); // Cria uma nova dica no banco de dados
+        return response()->json(['data' => $dica], 201);
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show($id)
     {
-        // Mock data for a single dica
-        $dicas = [
-            1 => [
-                'id' => 1,
-                'titulo' => 'Dica de Treino',
-                'descricao' => 'Como melhorar seu desempenho',
-                'conteudo' => 'Mantenha a consistência nos treinos para ver resultados.',
-                'autor' => 'Treinador Silva',
-                'categoria' => [
-                    'id' => 1,
-                    'nome' => 'Desempenho',
-                    'slug' => 'desempenho'
-                ],
-                'created_at' => '2024-03-01T12:00:00.000000Z'
-            ],
-            2 => [
-                'id' => 2,
-                'titulo' => 'Alimentação Pré-treino',
-                'descricao' => 'O que comer antes do treino',
-                'conteudo' => 'Consuma carboidratos de digestão rápida 30 minutos antes do treino.',
-                'autor' => 'Nutricionista Oliveira',
-                'categoria' => [
-                    'id' => 2,
-                    'nome' => 'Nutrição',
-                    'slug' => 'nutricao'
-                ],
-                'created_at' => '2024-03-02T14:30:00.000000Z'
-            ],
-            3 => [
-                'id' => 3,
-                'titulo' => 'Escolha do calçado',
-                'descricao' => 'Como escolher o tênis ideal',
-                'conteudo' => 'Escolha tênis específicos para o tipo de treino que você realiza.',
-                'autor' => 'Especialista em Vestuário',
-                'categoria' => [
-                    'id' => 3,
-                    'nome' => 'Vestuário',
-                    'slug' => 'vestuario'
-                ],
-                'created_at' => '2024-03-03T09:15:00.000000Z'
-            ],
-        ];
+        $dica = Dica::with(['categoria', 'comentarios', 'curtidas'])->find($id); // Carrega a dica com dados relacionados
 
-        if (!isset($dicas[$id])) {
+        if (!$dica) {
             return response()->json(['message' => 'Dica não encontrada'], 404);
         }
 
-        return response()->json(['data' => $dicas[$id]]);
+        return response()->json(['data' => $dica], 200);
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, $id)
+    {
+        $dica = Dica::find($id);
+
+        if (!$dica) {
+            return response()->json(['message' => 'Dica não encontrada'], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'titulo' => 'sometimes|required|string|max:255',
+            'descricao' => 'sometimes|required|string',
+            'conteudo' => 'sometimes|required|string',
+            'autor' => 'sometimes|required|string|max:255',
+            'categoria_id' => 'sometimes|required|exists:categorias_dicas,id',
+            'imagem' => 'nullable|string',
+            'publicado' => 'boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $dica->update($request->all()); // Atualiza a dica no banco de dados
+        return response()->json(['data' => $dica], 200);
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy($id)
+    {
+        $dica = Dica::find($id);
+
+        if (!$dica) {
+            return response()->json(['message' => 'Dica não encontrada'], 404);
+        }
+
+        $dica->delete(); // Remove a dica do banco de dados
+        return response()->json(['message' => 'Dica deletada com sucesso'], 200);
     }
 } 
