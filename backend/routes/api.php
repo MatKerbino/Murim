@@ -40,6 +40,8 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 // Rotas públicas
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [AuthController::class, 'register']);
+
 Route::post('/contatos', [ContatoController::class, 'store']);
 
 // Rotas para consulta de dados públicos

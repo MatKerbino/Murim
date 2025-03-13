@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "@/components/ui/use-toast"
 import { useAuth } from "@/contexts/auth-context"
+import { authService } from "@/lib/auth-service"
 
 export default function LoginPage() {
   const [loginData, setLoginData] = useState({
@@ -25,9 +26,11 @@ export default function LoginPage() {
   })
 
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [loginErrors, setLoginErrors] = useState<Record<string, string>>({})
+  const [registerErrors, setRegisterErrors] = useState<Record<string, string>>({})
 
   const { login, isLoading } = useAuth()
-
+  const router = useRouter()
   const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState("login")
 
@@ -45,6 +48,11 @@ export default function LoginPage() {
       ...prev,
       [name]: value,
     }))
+
+    // Clear error when user types
+    if (loginErrors[name]) {
+      setLoginErrors((prev) => ({ ...prev, [name]: "" }))
+    }
   }
 
   const handleRegisterChange = (e) => {
@@ -53,10 +61,72 @@ export default function LoginPage() {
       ...prev,
       [name]: value,
     }))
+
+    // Clear error when user types
+    if (registerErrors[name]) {
+      setRegisterErrors((prev) => ({ ...prev, [name]: "" }))
+    }
+  }
+
+  const validateLoginForm = () => {
+    const errors: Record<string, string> = {}
+
+    if (!loginData.email) {
+      errors.email = "Email é obrigatório"
+    } else if (!/\S+@\S+\.\S+/.test(loginData.email)) {
+      errors.email = "Email inválido"
+    }
+
+    if (!loginData.senha) {
+      errors.senha = "Senha é obrigatória"
+    } else if (loginData.senha.length < 6) {
+      errors.senha = "A senha deve ter pelo menos 6 caracteres"
+    }
+
+    setLoginErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
+  const validateRegisterForm = () => {
+    const errors: Record<string, string> = {}
+
+    if (!registerData.nome) {
+      errors.nome = "Nome é obrigatório"
+    }
+
+    if (!registerData.email) {
+      errors.email = "Email é obrigatório"
+    } else if (!/\S+@\S+\.\S+/.test(registerData.email)) {
+      errors.email = "Email inválido"
+    }
+
+    if (!registerData.senha) {
+      errors.senha = "Senha é obrigatória"
+    } else if (registerData.senha.length < 6) {
+      errors.senha = "A senha deve ter pelo menos 6 caracteres"
+    }
+
+    if (!registerData.confirmarSenha) {
+      errors.confirmarSenha = "Confirmação de senha é obrigatória"
+    } else if (registerData.senha !== registerData.confirmarSenha) {
+      errors.confirmarSenha = "As senhas não coincidem"
+    }
+
+    setRegisterErrors(errors)
+    return Object.keys(errors).length === 0
   }
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault()
+
+    if (!validateLoginForm()) {
+      toast({
+        variant: "destructive",
+        title: "Erro no formulário",
+        description: "Por favor, corrija os erros antes de continuar.",
+      })
+      return
+    }
 
     try {
       await login({
@@ -68,6 +138,9 @@ export default function LoginPage() {
         title: "Login realizado com sucesso!",
         description: "Bem-vindo de volta à Academia Murim.",
       })
+
+      // Redirect to home page after successful login
+      router.push("/")
     } catch (error) {
       console.error("Erro ao fazer login:", error)
       toast({
@@ -78,28 +151,58 @@ export default function LoginPage() {
     }
   }
 
-  const handleRegisterSubmit = (e) => {
+  const handleRegisterSubmit = async (e) => {
     e.preventDefault()
 
-    if (registerData.senha !== registerData.confirmarSenha) {
+    if (!validateRegisterForm()) {
       toast({
         variant: "destructive",
-        title: "Erro no cadastro",
-        description: "As senhas não coincidem.",
+        title: "Erro no formulário",
+        description: "Por favor, corrija os erros antes de continuar.",
       })
       return
     }
 
     setIsSubmitting(true)
 
-    // Simulando registro
-    setTimeout(() => {
+    try {
+      // Call the register API
+      await authService.register({
+        name: registerData.nome,
+        email: registerData.email,
+        password: registerData.senha,
+        password_confirmation: registerData.confirmarSenha,
+      })
+
       toast({
         title: "Cadastro realizado com sucesso!",
-        description: "Bem-vindo à Academia Murim.",
+        description: "Bem-vindo à Academia Murim. Faça login para continuar.",
       })
+
+      // Clear form and switch to login tab
+      setRegisterData({
+        nome: "",
+        email: "",
+        senha: "",
+        confirmarSenha: "",
+      })
+      setActiveTab("login")
+
+      // Pre-fill login form with registered email
+      setLoginData((prev) => ({
+        ...prev,
+        email: registerData.email,
+      }))
+    } catch (error) {
+      console.error("Erro ao fazer cadastro:", error)
+      toast({
+        variant: "destructive",
+        title: "Erro no cadastro",
+        description: "Não foi possível completar o cadastro. Tente novamente.",
+      })
+    } finally {
       setIsSubmitting(false)
-    }, 1500)
+    }
   }
 
   return (
@@ -126,8 +229,9 @@ export default function LoginPage() {
                     type="email"
                     value={loginData.email}
                     onChange={handleLoginChange}
-                    required
+                    className={loginErrors.email ? "border-red-500" : ""}
                   />
+                  {loginErrors.email && <p className="text-red-500 text-sm">{loginErrors.email}</p>}
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -142,8 +246,9 @@ export default function LoginPage() {
                     type="password"
                     value={loginData.senha}
                     onChange={handleLoginChange}
-                    required
+                    className={loginErrors.senha ? "border-red-500" : ""}
                   />
+                  {loginErrors.senha && <p className="text-red-500 text-sm">{loginErrors.senha}</p>}
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? "Entrando..." : "Entrar"}
@@ -161,7 +266,14 @@ export default function LoginPage() {
               <form onSubmit={handleRegisterSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="nome">Nome Completo</Label>
-                  <Input id="nome" name="nome" value={registerData.nome} onChange={handleRegisterChange} required />
+                  <Input
+                    id="nome"
+                    name="nome"
+                    value={registerData.nome}
+                    onChange={handleRegisterChange}
+                    className={registerErrors.nome ? "border-red-500" : ""}
+                  />
+                  {registerErrors.nome && <p className="text-red-500 text-sm">{registerErrors.nome}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email-register">Email</Label>
@@ -171,8 +283,9 @@ export default function LoginPage() {
                     type="email"
                     value={registerData.email}
                     onChange={handleRegisterChange}
-                    required
+                    className={registerErrors.email ? "border-red-500" : ""}
                   />
+                  {registerErrors.email && <p className="text-red-500 text-sm">{registerErrors.email}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="senha-register">Senha</Label>
@@ -182,8 +295,9 @@ export default function LoginPage() {
                     type="password"
                     value={registerData.senha}
                     onChange={handleRegisterChange}
-                    required
+                    className={registerErrors.senha ? "border-red-500" : ""}
                   />
+                  {registerErrors.senha && <p className="text-red-500 text-sm">{registerErrors.senha}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="confirmar-senha">Confirmar Senha</Label>
@@ -193,8 +307,11 @@ export default function LoginPage() {
                     type="password"
                     value={registerData.confirmarSenha}
                     onChange={handleRegisterChange}
-                    required
+                    className={registerErrors.confirmarSenha ? "border-red-500" : ""}
                   />
+                  {registerErrors.confirmarSenha && (
+                    <p className="text-red-500 text-sm">{registerErrors.confirmarSenha}</p>
+                  )}
                 </div>
                 <Button type="submit" className="w-full" disabled={isSubmitting}>
                   {isSubmitting ? "Cadastrando..." : "Cadastrar"}

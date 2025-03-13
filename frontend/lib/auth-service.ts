@@ -23,18 +23,35 @@ export interface AuthResponse {
   }
 }
 
+export interface RegisterCredentials {
+  name: string
+  email: string
+  password: string
+  password_confirmation: string
+}
+
 export const authService = {
   async login(credentials: LoginCredentials): Promise<User> {
     try {
       const response = await axios.post<AuthResponse>(`${API_URL}/login`, credentials)
 
       // Armazenar token e informações do usuário
-      localStorage.setItem("token", response.data.data.access_token)
-      localStorage.setItem("user", JSON.stringify(response.data.data.user))
+      if (typeof window !== "undefined") {
+        localStorage.setItem("token", response.data.data.access_token)
+        localStorage.setItem("user", JSON.stringify(response.data.data.user))
+      }
 
       return response.data.data.user
     } catch (error) {
       console.error("Error during login:", error)
+      throw error
+    }
+  },
+
+  async register(credentials: RegisterCredentials): Promise<void> {
+    try {
+      await axios.post(`${API_URL}/register`, credentials)
+    } catch (error) {
       throw error
     }
   },
@@ -46,8 +63,10 @@ export const authService = {
       console.error("Error during logout:", error)
     } finally {
       // Remover token e informações do usuário mesmo se a requisição falhar
-      localStorage.removeItem("token")
-      localStorage.removeItem("user")
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("token")
+        localStorage.removeItem("user")
+      }
     }
   },
 

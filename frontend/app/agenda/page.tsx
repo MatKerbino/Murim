@@ -27,6 +27,19 @@ export default function AgendaPage() {
   const [error, setError] = useState<string | null>(null)
   const [selectedPersonal, setSelectedPersonal] = useState<Personal | null>(null)
 
+  const horarios = [
+    "08:00 - 09:00",
+    "09:00 - 10:00",
+    "10:00 - 11:00",
+    "11:00 - 12:00",
+    "14:00 - 15:00",
+    "15:00 - 16:00",
+    "16:00 - 17:00",
+    "17:00 - 18:00",
+    "18:00 - 19:00",
+    "19:00 - 20:00",
+  ]
+
   const { isAuthenticated, user } = useAuth()
 
   useEffect(() => {
@@ -142,17 +155,27 @@ export default function AgendaPage() {
         <ErrorMessage title="Erro ao carregar personais" message={error} onRetry={handleRetry} />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <Card className="border shadow-sm transition-all duration-300 hover:shadow-lg">
+          <Card className="border shadow-sm transition-all duration-300 hover:shadow-lg h-full">
             <CardHeader>
               <CardTitle className="text-primary">Selecione a Data</CardTitle>
               <CardDescription>Escolha um dia disponível para seu agendamento</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex justify-center items-center h-full pb-8">
               <Calendar
                 mode="single"
                 selected={date}
                 onSelect={setDate}
-                className="rounded-md border"
+                className="rounded-md border w-full max-w-full"
+                classNames={{
+                  root: "w-full",
+                  table: "w-full",
+                  head_cell: "w-full",
+                  cell: "w-full h-12 text-center p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+                  day: "h-12 w-12 p-0 font-normal aria-selected:opacity-100 hover:bg-primary/10 rounded-md transition-colors",
+                  day_selected:
+                    "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+                  nav_button: "h-9 w-9 bg-transparent p-0 opacity-50 hover:opacity-100",
+                }}
                 disabled={(date) => {
                   const today = new Date()
                   today.setHours(0, 0, 0, 0)
@@ -172,17 +195,6 @@ export default function AgendaPage() {
                 {isLoading ? (
                   <div className="flex justify-center items-center h-64">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-                  </div>
-                ) : !isAuthenticated ? (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground mb-4">
-                      Você precisa estar logado para agendar um personal trainer.
-                    </p>
-                    <Link href="/login">
-                      <Button className="bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-300 hover:shadow-md hover:scale-105">
-                        Fazer Login
-                      </Button>
-                    </Link>
                   </div>
                 ) : (
                   <form onSubmit={handleSubmit} className="space-y-4">
@@ -240,13 +252,24 @@ export default function AgendaPage() {
                       </Select>
                     </div>
 
-                    <Button
-                      type="submit"
-                      className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-300 hover:shadow-md hover:scale-105"
-                      disabled={isLoading}
-                    >
-                      {isLoading ? "Agendando..." : "Agendar"}
-                    </Button>
+                    {isAuthenticated ? (
+                      <Button
+                        type="submit"
+                        className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-300 hover:shadow-md hover:scale-105"
+                        disabled={isLoading}
+                      >
+                        {isLoading ? "Agendando..." : "Agendar"}
+                      </Button>
+                    ) : (
+                      <div className="text-center p-4 bg-muted rounded-md">
+                        <p className="text-muted-foreground mb-2">Faça login para agendar</p>
+                        <Link href="/login">
+                          <Button className="bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-300 hover:shadow-md hover:scale-105">
+                            Fazer Login
+                          </Button>
+                        </Link>
+                      </div>
+                    )}
                   </form>
                 )}
               </CardContent>
@@ -277,6 +300,9 @@ export default function AgendaPage() {
                     <p className="text-sm text-muted-foreground">
                       <strong>Telefone:</strong> {selectedPersonal.telefone}
                     </p>
+                    {selectedPersonal.biografia && (
+                      <p className="text-sm text-muted-foreground mt-2">{selectedPersonal.biografia}</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
