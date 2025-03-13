@@ -1,4 +1,5 @@
-import apiClient from "./api-client"
+import axios from "axios"
+import { API_URL } from "./utils"
 
 export interface Contato {
   id: number
@@ -23,48 +24,51 @@ export interface ContatoForm {
 }
 
 export const contatoService = {
-  async enviarContato(contato: ContatoForm): Promise<Contato> {
+  async enviarContato(contato: Omit<Contato, "id" | "created_at" | "updated_at">): Promise<Contato> {
     try {
-      const response = await apiClient.post<{ status: string; data: Contato }>("/contatos", contato)
-      return response.data.data
+      const response = await axios.post(`${API_URL}/contatos`, contato)
+      return response.data.data || response.data
     } catch (error) {
+      console.error("Error sending contato:", error)
       throw error
     }
   },
 
   async getContatos(): Promise<Contato[]> {
     try {
-      const response = await apiClient.get<{ status: string; data: Contato[] }>("/contatos")
-      return response.data.data
+      const response = await axios.get(`${API_URL}/contatos`)
+      return response.data.data || response.data
     } catch (error) {
+      console.error("Error fetching contatos:", error)
       throw error
     }
   },
 
   async getContato(id: number): Promise<Contato> {
     try {
-      const response = await apiClient.get<{ status: string; data: Contato }>(`/contatos/${id}`)
-      return response.data.data
+      const response = await axios.get(`${API_URL}/contatos/${id}`)
+      return response.data.data || response.data
     } catch (error) {
+      console.error(`Error fetching contato with id ${id}:`, error)
       throw error
     }
   },
 
   async responderContato(id: number, resposta: string): Promise<Contato> {
     try {
-      const response = await apiClient.post<{ status: string; data: Contato }>(`/contatos/${id}/responder`, {
-        resposta,
-      })
-      return response.data.data
+      const response = await axios.post(`${API_URL}/contatos/${id}/responder`, { resposta })
+      return response.data.data || response.data
     } catch (error) {
+      console.error(`Error responding to contato with id ${id}:`, error)
       throw error
     }
   },
 
   async deleteContato(id: number): Promise<void> {
     try {
-      await apiClient.delete(`/contatos/${id}`)
+      await axios.delete(`${API_URL}/contatos/${id}`)
     } catch (error) {
+      console.error(`Error deleting contato with id ${id}:`, error)
       throw error
     }
   },

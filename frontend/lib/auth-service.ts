@@ -1,4 +1,5 @@
-import apiClient from "./api-client"
+import axios from "axios"
+import { API_URL } from "./utils"
 
 export interface LoginCredentials {
   email: string
@@ -25,7 +26,7 @@ export interface AuthResponse {
 export const authService = {
   async login(credentials: LoginCredentials): Promise<User> {
     try {
-      const response = await apiClient.post<AuthResponse>("/login", credentials)
+      const response = await axios.post<AuthResponse>(`${API_URL}/login`, credentials)
 
       // Armazenar token e informações do usuário
       localStorage.setItem("token", response.data.data.access_token)
@@ -33,15 +34,16 @@ export const authService = {
 
       return response.data.data.user
     } catch (error) {
+      console.error("Error during login:", error)
       throw error
     }
   },
 
   async logout(): Promise<void> {
     try {
-      await apiClient.post("/logout")
+      await axios.post(`${API_URL}/logout`)
     } catch (error) {
-      console.error("Erro ao fazer logout:", error)
+      console.error("Error during logout:", error)
     } finally {
       // Remover token e informações do usuário mesmo se a requisição falhar
       localStorage.removeItem("token")

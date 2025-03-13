@@ -1,4 +1,5 @@
-import apiClient from "./api-client"
+import axios from "axios"
+import { API_URL } from "./utils"
 
 export interface Agendamento {
   id: number
@@ -24,46 +25,55 @@ export interface Agendamento {
 export const agendamentosService = {
   async getAgendamentos(): Promise<Agendamento[]> {
     try {
-      const response = await apiClient.get<{ status: string; data: Agendamento[] }>("/agendamentos")
-      return response.data.data
+      const response = await axios.get(`${API_URL}/agendamentos`)
+      if (response.data && response.data.data) {
+        return response.data.data
+      }
+      return response.data
     } catch (error) {
+      console.error("Error fetching agendamentos:", error)
       throw error
     }
   },
 
-  async getMeusAgendamentos(): Promise<Agendamento[]> {
+  async getAgendamento(id: number): Promise<Agendamento> {
     try {
-      const response = await apiClient.get<{ status: string; data: Agendamento[] }>("/meus-agendamentos")
-      return response.data.data
+      const response = await axios.get(`${API_URL}/agendamentos/${id}`)
+      return response.data.data || response.data
     } catch (error) {
+      console.error(`Error fetching agendamento with id ${id}:`, error)
       throw error
     }
   },
 
-  async createAgendamento(
-    agendamento: Omit<Agendamento, "id" | "created_at" | "updated_at" | "aluno" | "personal">,
-  ): Promise<Agendamento> {
+  async createAgendamento(agendamento: Omit<Agendamento, "id" | "created_at" | "updated_at">): Promise<Agendamento> {
     try {
-      const response = await apiClient.post<{ status: string; data: Agendamento }>("/agendamentos", agendamento)
-      return response.data.data
+      const response = await axios.post(`${API_URL}/agendamentos`, agendamento)
+      return response.data.data || response.data
     } catch (error) {
+      console.error("Error creating agendamento:", error)
       throw error
     }
   },
 
   async updateAgendamento(id: number, agendamento: Partial<Agendamento>): Promise<Agendamento> {
     try {
-      const response = await apiClient.put<{ status: string; data: Agendamento }>(`/agendamentos/${id}`, agendamento)
-      return response.data.data
+      const response = await axios.post(
+        `${API_URL}/agendamentos/${id}?_method=PUT`,
+        agendamento
+      )
+      return response.data.data || response.data
     } catch (error) {
+      console.error(`Error updating agendamento with id ${id}:`, error)
       throw error
     }
   },
 
   async deleteAgendamento(id: number): Promise<void> {
     try {
-      await apiClient.delete(`/agendamentos/${id}`)
+      await axios.delete(`${API_URL}/agendamentos/${id}`)
     } catch (error) {
+      console.error(`Error deleting agendamento with id ${id}:`, error)
       throw error
     }
   },

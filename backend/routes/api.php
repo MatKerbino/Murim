@@ -28,13 +28,9 @@ use Illuminate\Http\Request;
 |
 */
 
-// Basic test route to verify API functionality
+// Test endpoint to verify API is working
 Route::get('/test', function() {
-    return response()->json([
-        'message' => 'API is working properly',
-        'status' => 'success',
-        'time' => now()->toDateTimeString()
-    ]);
+    return response()->json(['status' => 'success', 'message' => 'API is working!']);
 });
 
 // User auth route
@@ -59,7 +55,10 @@ Route::get('/personais', [PersonalController::class, 'index']);
 Route::get('/personais/{id}', [PersonalController::class, 'show']);
 
 Route::get('/aulas', [AulaController::class, 'index']);
+Route::get('/aulas/{id}', [AulaController::class, 'show']);
+
 Route::get('/dias-semana', [DiaSemanaController::class, 'index']);
+Route::get('/dias-semana/{id}', [DiaSemanaController::class, 'show']);
 
 Route::get('/dicas', [DicaController::class, 'index']);
 Route::get('/dicas/{id}', [DicaController::class, 'show']);

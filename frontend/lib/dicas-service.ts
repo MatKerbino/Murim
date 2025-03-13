@@ -1,4 +1,5 @@
-import { ApiClient } from './api-client';
+import axios from "axios"
+import { API_URL } from "./utils"
 
 // Define interfaces for the data model
 export interface Categoria {
@@ -18,12 +19,55 @@ export interface Dica {
   updated_at?: string;
 }
 
-// Create a specific class for Dicas service that extends the generic ApiClient
-class DicasService extends ApiClient<Dica> {
-  constructor() {
-    // Use the base URL for the dicas endpoint
-    super('/v1/dicas');
-  }
+export const dicasService = {
+  async getDicas(): Promise<Dica[]> {
+    try {
+      const response = await axios.get(`${API_URL}/dicas`)
+      return response.data.data || response.data
+    } catch (error) {
+      console.error("Error fetching dicas:", error)
+      throw error
+    }
+  },
+
+  async getDica(id: number): Promise<Dica> {
+    try {
+      const response = await axios.get(`${API_URL}/dicas/${id}`)
+      return response.data.data || response.data
+    } catch (error) {
+      console.error(`Error fetching dica with id ${id}:`, error)
+      throw error
+    }
+  },
+
+  async createDica(dica: Omit<Dica, "id" | "created_at" | "updated_at">): Promise<Dica> {
+    try {
+      const response = await axios.post(`${API_URL}/dicas`, dica)
+      return response.data.data || response.data
+    } catch (error) {
+      console.error("Error creating dica:", error)
+      throw error
+    }
+  },
+
+  async updateDica(id: number, dica: Partial<Dica>): Promise<Dica> {
+    try {
+      const response = await axios.post(`${API_URL}/dicas/${id}?_method=PUT`, dica)
+      return response.data.data || response.data
+    } catch (error) {
+      console.error(`Error updating dica with id ${id}:`, error)
+      throw error
+    }
+  },
+
+  async deleteDica(id: number): Promise<void> {
+    try {
+      await axios.delete(`${API_URL}/dicas/${id}`)
+    } catch (error) {
+      console.error(`Error deleting dica with id ${id}:`, error)
+      throw error
+    }
+  },
 
   // Get dicas by category slug
   async getDicasByCategoria(categoriaSlug: string): Promise<Dica[]> {
@@ -34,7 +78,7 @@ class DicasService extends ApiClient<Dica> {
       console.error(`Error fetching dicas by categoria ${categoriaSlug}:`, error);
       throw error;
     }
-  }
+  },
 
   // Get featured dicas
   async getDicasDestaque(): Promise<Dica[]> {
@@ -46,7 +90,7 @@ class DicasService extends ApiClient<Dica> {
       console.error('Error fetching dicas destaque:', error);
       throw error;
     }
-  }
+  },
 
   // Search dicas by query
   async searchDicas(query: string): Promise<Dica[]> {
@@ -64,7 +108,7 @@ class DicasService extends ApiClient<Dica> {
       console.error(`Error searching dicas with query ${query}:`, error);
       throw error;
     }
-  }
+  },
 
   // Get dicas with pagination
   async getDicasPaginated(page: number = 1, perPage: number = 10): Promise<{
@@ -93,7 +137,4 @@ class DicasService extends ApiClient<Dica> {
     }
   }
 }
-
-// Export a singleton instance of the service
-export const dicasService = new DicasService();
 

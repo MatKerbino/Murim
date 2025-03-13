@@ -1,4 +1,5 @@
-import apiClient from "./api-client"
+import axios from "axios"
+import { API_URL } from "./utils"
 
 export interface Produto {
   id: number
@@ -28,59 +29,56 @@ export interface CategoriaProduto {
 export const produtosService = {
   async getProdutos(): Promise<Produto[]> {
     try {
-      const response = await apiClient.get<{ status: string; data: Produto[] }>("/produtos")
-      return response.data.data
+      const response = await axios.get(`${API_URL}/produtos`)
+      return response.data.data || response.data
     } catch (error) {
+      console.error("Error fetching produtos:", error)
       throw error
     }
   },
 
   async getProduto(id: number): Promise<Produto> {
     try {
-      const response = await apiClient.get<{ status: string; data: Produto }>(`/produtos/${id}`)
-      return response.data.data
+      const response = await axios.get(`${API_URL}/produtos/${id}`)
+      return response.data.data || response.data
     } catch (error) {
+      console.error(`Error fetching produto with id ${id}:`, error)
       throw error
     }
   },
 
-  async createProduto(produto: FormData): Promise<Produto> {
+  async createProduto(produto: Omit<Produto, "id" | "created_at" | "updated_at">): Promise<Produto> {
     try {
-      const response = await apiClient.post<{ status: string; data: Produto }>("/produtos", produto, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      })
-      return response.data.data
+      const response = await axios.post(`${API_URL}/produtos`, produto)
+      return response.data.data || response.data
     } catch (error) {
+      console.error("Error creating produto:", error)
       throw error
     }
   },
 
-  async updateProduto(id: number, produto: FormData): Promise<Produto> {
+  async updateProduto(id: number, produto: Partial<Produto>): Promise<Produto> {
     try {
-      const response = await apiClient.post<{ status: string; data: Produto }>(`/produtos/${id}?_method=PUT`, produto, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      })
-      return response.data.data
+      const response = await axios.post(`${API_URL}/produtos/${id}?_method=PUT`, produto)
+      return response.data.data || response.data
     } catch (error) {
+      console.error(`Error updating produto with id ${id}:`, error)
       throw error
     }
   },
 
   async deleteProduto(id: number): Promise<void> {
     try {
-      await apiClient.delete(`/produtos/${id}`)
+      await axios.delete(`${API_URL}/produtos/${id}`)
     } catch (error) {
+      console.error(`Error deleting produto with id ${id}:`, error)
       throw error
     }
   },
 
   async getCategorias(): Promise<CategoriaProduto[]> {
     try {
-      const response = await apiClient.get<{ status: string; data: CategoriaProduto[] }>("/categorias-produtos")
+      const response = await axios.get<{ status: string; data: CategoriaProduto[] }>(`${API_URL}/categorias-produtos`)
       return response.data.data
     } catch (error) {
       throw error
