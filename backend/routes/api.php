@@ -15,6 +15,7 @@ use App\Http\Controllers\API\CategoriaDicaController;
 use App\Http\Controllers\API\ContatoController;
 use App\Http\Controllers\API\AuthController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
 
 /*
 |--------------------------------------------------------------------------
@@ -26,6 +27,20 @@ use Illuminate\Support\Facades\Route;
 | be assigned to the "api" middleware group. Make something great!
 |
 */
+
+// Basic test route to verify API functionality
+Route::get('/test', function() {
+    return response()->json([
+        'message' => 'API is working properly',
+        'status' => 'success',
+        'time' => now()->toDateTimeString()
+    ]);
+});
+
+// User auth route
+Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+    return $request->user();
+});
 
 // Rotas públicas
 Route::post('/login', [AuthController::class, 'login']);
@@ -99,6 +114,56 @@ Route::middleware('auth:api')->group(function () {
         // Gerenciamento de Contatos
         Route::apiResource('contatos', ContatoController::class)->except(['store']);
         Route::post('/contatos/{id}/responder', [ContatoController::class, 'responder']);
+    });
+});
+
+// Example resource routes for demonstration
+Route::prefix('v1')->group(function () {
+    // Dicas routes
+    Route::get('/dicas', function() {
+        return response()->json([
+            'data' => [
+                [
+                    'id' => 1,
+                    'titulo' => 'Dica de Treino',
+                    'descricao' => 'Como melhorar seu desempenho',
+                    'conteudo' => 'Mantenha a consistência nos treinos para ver resultados.',
+                    'autor' => 'Treinador Silva',
+                    'categoria' => [
+                        'id' => 1,
+                        'nome' => 'Desempenho',
+                        'slug' => 'desempenho'
+                    ],
+                    'created_at' => '2024-03-01T12:00:00.000000Z'
+                ],
+                [
+                    'id' => 2,
+                    'titulo' => 'Alimentação Pré-treino',
+                    'descricao' => 'O que comer antes do treino',
+                    'conteudo' => 'Consuma carboidratos de digestão rápida 30 minutos antes do treino.',
+                    'autor' => 'Nutricionista Oliveira',
+                    'categoria' => [
+                        'id' => 2,
+                        'nome' => 'Nutrição',
+                        'slug' => 'nutricao'
+                    ],
+                    'created_at' => '2024-03-02T14:30:00.000000Z'
+                ],
+                [
+                    'id' => 3,
+                    'titulo' => 'Escolha do calçado',
+                    'descricao' => 'Como escolher o tênis ideal',
+                    'conteudo' => 'Escolha tênis específicos para o tipo de treino que você realiza.',
+                    'autor' => 'Especialista em Vestuário',
+                    'categoria' => [
+                        'id' => 3,
+                        'nome' => 'Vestuário',
+                        'slug' => 'vestuario'
+                    ],
+                    'created_at' => '2024-03-03T09:15:00.000000Z'
+                ],
+            ]
+        ]);
     });
 });
 

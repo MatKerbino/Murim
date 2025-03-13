@@ -1,0 +1,48 @@
+import axios from 'axios';
+
+// Create an Axios instance with default configuration
+const axiosInstance = axios.create({
+  baseURL: 'http://localhost:8000/api', // Base URL of your Laravel API
+  timeout: 10000, // Request timeout in milliseconds
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  },
+});
+
+// Add a request interceptor for authentication tokens if needed
+axiosInstance.interceptors.request.use(
+  (config) => {
+    // You can add authentication headers here if needed
+    // const token = localStorage.getItem('token');
+    // if (token) {
+    //   config.headers.Authorization = `Bearer ${token}`;
+    // }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Add a response interceptor for handling common errors
+axiosInstance.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    // Handle 401 Unauthorized responses
+    if (error.response && error.response.status === 401) {
+      // Handle unauthorized access (e.g., redirect to login page)
+      console.error('Unauthorized access. Please log in again.');
+      // Optionally clear local storage or redirect
+    }
+    
+    // Log errors for debugging
+    console.error('API Error:', error.response?.data || error.message);
+    
+    return Promise.reject(error);
+  }
+);
+
+export default axiosInstance; 
