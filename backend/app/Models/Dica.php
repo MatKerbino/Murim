@@ -31,5 +31,25 @@ class Dica extends Model
     {
         return $this->belongsTo(CategoriaDica::class, 'categoria_id');
     }
+
+    public function comentarios()
+    {
+        return $this->hasMany(Comentario::class);
+    }
+    
+    public function curtidas()
+    {
+        return $this->hasMany(Curtida::class);
+    }
+    
+    public function getNumeroComentariosAttribute()
+    {
+        return $this->comentarios()->count();
+    }
+    
+    public function getNumeroCurtidasAttribute()
+    {
+        return $this->curtidas()->count();
+    }
 }
 

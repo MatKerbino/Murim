@@ -14,8 +14,10 @@ use App\Http\Controllers\API\DicaController;
 use App\Http\Controllers\API\CategoriaDicaController;
 use App\Http\Controllers\API\ContatoController;
 use App\Http\Controllers\API\AuthController;
+use App\Http\Controllers\API\ComentarioController;
+use App\Http\Controllers\API\CurtidaController;
+use App\Http\Controllers\API\PerfilController;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Http\Request;
 
 /*
 |--------------------------------------------------------------------------
@@ -28,20 +30,9 @@ use Illuminate\Http\Request;
 |
 */
 
-// Test endpoint to verify API is working
-Route::get('/test', function() {
-    return response()->json(['status' => 'success', 'message' => 'API is working!']);
-});
-
-// User auth route
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
-
 // Rotas públicas
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
-
 Route::post('/contatos', [ContatoController::class, 'store']);
 
 // Rotas para consulta de dados públicos
@@ -57,24 +48,34 @@ Route::get('/personais', [PersonalController::class, 'index']);
 Route::get('/personais/{id}', [PersonalController::class, 'show']);
 
 Route::get('/aulas', [AulaController::class, 'index']);
-Route::get('/aulas/{id}', [AulaController::class, 'show']);
-
 Route::get('/dias-semana', [DiaSemanaController::class, 'index']);
-Route::get('/dias-semana/{id}', [DiaSemanaController::class, 'show']);
 
 Route::get('/dicas', [DicaController::class, 'index']);
 Route::get('/dicas/{id}', [DicaController::class, 'show']);
 Route::get('/categorias-dicas', [CategoriaDicaController::class, 'index']);
+
+// Comentários públicos
+Route::get('/dicas/{dicaId}/comentarios', [ComentarioController::class, 'index']);
 
 // Rotas protegidas por autenticação
 Route::middleware('auth:api')->group(function () {
     // Rota para logout
     Route::post('/logout', [AuthController::class, 'logout']);
     
+    // Perfil do usuário
+    Route::get('/perfil', [PerfilController::class, 'show']);
+    Route::put('/perfil', [PerfilController::class, 'update']);
+    
     // Rotas para alunos
     Route::post('/agendamentos', [AgendamentoController::class, 'store']);
     Route::get('/meus-agendamentos', [AgendamentoController::class, 'meusAgendamentos']);
     Route::get('/meus-pagamentos', [PagamentoController::class, 'meusPagamentos']);
+    
+    // Comentários e curtidas
+    Route::post('/dicas/{dicaId}/comentarios', [ComentarioController::class, 'store']);
+    Route::delete('/comentarios/{id}', [ComentarioController::class, 'destroy']);
+    Route::post('/dicas/{dicaId}/curtir', [CurtidaController::class, 'toggle']);
+    Route::get('/dicas/{dicaId}/curtida', [CurtidaController::class, 'verificar']);
     
     // Rotas para vendas
     Route::post('/vendas', [VendaController::class, 'store']);
@@ -103,6 +104,7 @@ Route::middleware('auth:api')->group(function () {
         
         // CRUD Agendamentos
         Route::apiResource('agendamentos', AgendamentoController::class)->except(['store']);
+        Route::post('/agendamentos/{id}/aprovar', [AgendamentoController::class, 'aprovar']);
         
         // CRUD Aulas e Dias da Semana
         Route::apiResource('aulas', AulaController::class)->except(['index']);
@@ -112,59 +114,13 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('dicas', DicaController::class)->except(['index', 'show']);
         Route::apiResource('categorias-dicas', CategoriaDicaController::class)->except(['index']);
         
+        // Gerenciamento de Comentários
+        Route::get('/admin/comentarios', [ComentarioController::class, 'listarTodos']);
+        Route::post('/comentarios/{id}/aprovar', [ComentarioController::class, 'aprovar']);
+        
         // Gerenciamento de Contatos
         Route::apiResource('contatos', ContatoController::class)->except(['store']);
         Route::post('/contatos/{id}/responder', [ContatoController::class, 'responder']);
-    });
-});
-
-// Example resource routes for demonstration
-Route::prefix('v1')->group(function () {
-    // Dicas routes
-    Route::get('/dicas', function() {
-        return response()->json([
-            'data' => [
-                [
-                    'id' => 1,
-                    'titulo' => 'Dica de Treino',
-                    'descricao' => 'Como melhorar seu desempenho',
-                    'conteudo' => 'Mantenha a consistência nos treinos para ver resultados.',
-                    'autor' => 'Treinador Silva',
-                    'categoria' => [
-                        'id' => 1,
-                        'nome' => 'Desempenho',
-                        'slug' => 'desempenho'
-                    ],
-                    'created_at' => '2024-03-01T12:00:00.000000Z'
-                ],
-                [
-                    'id' => 2,
-                    'titulo' => 'Alimentação Pré-treino',
-                    'descricao' => 'O que comer antes do treino',
-                    'conteudo' => 'Consuma carboidratos de digestão rápida 30 minutos antes do treino.',
-                    'autor' => 'Nutricionista Oliveira',
-                    'categoria' => [
-                        'id' => 2,
-                        'nome' => 'Nutrição',
-                        'slug' => 'nutricao'
-                    ],
-                    'created_at' => '2024-03-02T14:30:00.000000Z'
-                ],
-                [
-                    'id' => 3,
-                    'titulo' => 'Escolha do calçado',
-                    'descricao' => 'Como escolher o tênis ideal',
-                    'conteudo' => 'Escolha tênis específicos para o tipo de treino que você realiza.',
-                    'autor' => 'Especialista em Vestuário',
-                    'categoria' => [
-                        'id' => 3,
-                        'nome' => 'Vestuário',
-                        'slug' => 'vestuario'
-                    ],
-                    'created_at' => '2024-03-03T09:15:00.000000Z'
-                ],
-            ]
-        ]);
     });
 });
 

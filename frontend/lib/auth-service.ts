@@ -23,6 +23,11 @@ export interface AuthResponse {
   }
 }
 
+export interface ApiErrorResponse {
+  message: string
+  errors?: Record<string, string[]>
+}
+
 export interface RegisterCredentials {
   name: string
   email: string
@@ -43,8 +48,25 @@ export const authService = {
 
       return response.data.data.user
     } catch (error) {
-      console.error("Error during login:", error)
-      throw error
+      if (error.response && error.response.data) {
+        const errorData = error.response.data as ApiErrorResponse
+
+        // Formatar mensagens de erro
+        if (errorData.errors) {
+          const formattedErrors: Record<string, string> = {}
+
+          // Converter array de erros para string única por campo
+          Object.entries(errorData.errors).forEach(([field, messages]) => {
+            formattedErrors[field] = messages[0]
+          })
+
+          throw { message: errorData.message, errors: formattedErrors }
+        }
+
+        throw { message: errorData.message }
+      }
+
+      throw { message: "Ocorreu um erro ao fazer login. Tente novamente." }
     }
   },
 
@@ -52,7 +74,25 @@ export const authService = {
     try {
       await axios.post(`${API_URL}/register`, credentials)
     } catch (error) {
-      throw error
+      if (error.response && error.response.data) {
+        const errorData = error.response.data as ApiErrorResponse
+
+        // Formatar mensagens de erro
+        if (errorData.errors) {
+          const formattedErrors: Record<string, string> = {}
+
+          // Converter array de erros para string única por campo
+          Object.entries(errorData.errors).forEach(([field, messages]) => {
+            formattedErrors[field] = messages[0]
+          })
+
+          throw { message: errorData.message, errors: formattedErrors }
+        }
+
+        throw { message: errorData.message }
+      }
+
+      throw { message: "Ocorreu um erro ao fazer cadastro. Tente novamente." }
     }
   },
 

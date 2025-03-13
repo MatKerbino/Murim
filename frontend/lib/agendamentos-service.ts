@@ -77,5 +77,16 @@ export const agendamentosService = {
       throw error
     }
   },
+
+  async aprovarAgendamento(id: number, status: "confirmado" | "cancelado"): Promise<Agendamento> {
+    try {
+      const response = await axios.post<{ status: string; data: Agendamento }>(`${API_URL}/agendamentos/${id}/aprovar`, {
+        status,
+      })
+      return response.data.data
+    } catch (error) {
+      throw error
+    }
+  },
 }
 

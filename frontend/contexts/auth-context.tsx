@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
 import { authService, type User, type LoginCredentials } from "@/lib/auth-service"
+import { toast } from "@/components/ui/use-toast"
 
 interface AuthContextType {
   user: User | null
@@ -13,7 +14,21 @@ interface AuthContextType {
   logout: () => Promise<void>
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+// Valor padrão para o contexto
+const defaultContext: AuthContextType = {
+  user: null,
+  isLoading: true,
+  isAuthenticated: false,
+  isAdmin: false,
+  login: async () => {
+    throw new Error("AuthProvider not initialized")
+  },
+  logout: async () => {
+    throw new Error("AuthProvider not initialized")
+  },
+}
+
+const AuthContext = createContext<AuthContextType>(defaultContext)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
@@ -22,9 +37,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Verificar se o usuário está autenticado ao carregar a página
-    const currentUser = authService.getCurrentUser()
-    setUser(currentUser)
-    setIsLoading(false)
+    const loadUser = () => {
+      try {
+        const currentUser = authService.getCurrentUser()
+        setUser(currentUser)
+      } catch (error) {
+        console.error("Erro ao carregar usuário:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadUser()
   }, [])
 
   const login = async (credentials: LoginCredentials) => {
@@ -32,8 +56,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const user = await authService.login(credentials)
       setUser(user)
-      router.push("/")
+      return user
     } catch (error) {
+      // Propagar o erro para ser tratado no componente
       throw error
     } finally {
       setIsLoading(false)
@@ -46,8 +71,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await authService.logout()
       setUser(null)
       router.push("/login")
+      toast({
+        title: "Logout realizado com sucesso",
+        description: "Você foi desconectado da sua conta.",
+      })
     } catch (error) {
       console.error("Erro ao fazer logout:", error)
+      toast({
+        variant: "destructive",
+        title: "Erro ao fazer logout",
+        description: "Ocorreu um erro ao desconectar da sua conta.",
+      })
     } finally {
       setIsLoading(false)
     }
@@ -70,10 +104,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider")
-  }
-  return context
+  return useContext(AuthContext)
 }
 

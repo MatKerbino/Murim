@@ -11,6 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "@/components/ui/use-toast"
 import { useAuth } from "@/contexts/auth-context"
 import { authService } from "@/lib/auth-service"
+import { AlertCircle } from "lucide-react"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function LoginPage() {
   const [loginData, setLoginData] = useState({
@@ -28,6 +30,7 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [loginErrors, setLoginErrors] = useState<Record<string, string>>({})
   const [registerErrors, setRegisterErrors] = useState<Record<string, string>>({})
+  const [apiError, setApiError] = useState<string | null>(null)
 
   const { login, isLoading } = useAuth()
   const router = useRouter()
@@ -42,6 +45,11 @@ export default function LoginPage() {
     }
   }, [searchParams])
 
+  // Limpar erro da API quando mudar de aba
+  useEffect(() => {
+    setApiError(null)
+  }, [activeTab])
+
   const handleLoginChange = (e) => {
     const { name, value } = e.target
     setLoginData((prev) => ({
@@ -53,6 +61,9 @@ export default function LoginPage() {
     if (loginErrors[name]) {
       setLoginErrors((prev) => ({ ...prev, [name]: "" }))
     }
+
+    // Limpar erro da API quando o usuário digita
+    setApiError(null)
   }
 
   const handleRegisterChange = (e) => {
@@ -66,6 +77,9 @@ export default function LoginPage() {
     if (registerErrors[name]) {
       setRegisterErrors((prev) => ({ ...prev, [name]: "" }))
     }
+
+    // Limpar erro da API quando o usuário digita
+    setApiError(null)
   }
 
   const validateLoginForm = () => {
@@ -119,12 +133,10 @@ export default function LoginPage() {
   const handleLoginSubmit = async (e) => {
     e.preventDefault()
 
+    // Limpar erro da API
+    setApiError(null)
+
     if (!validateLoginForm()) {
-      toast({
-        variant: "destructive",
-        title: "Erro no formulário",
-        description: "Por favor, corrija os erros antes de continuar.",
-      })
       return
     }
 
@@ -143,23 +155,40 @@ export default function LoginPage() {
       router.push("/")
     } catch (error) {
       console.error("Erro ao fazer login:", error)
-      toast({
-        variant: "destructive",
-        title: "Erro no login",
-        description: "Email ou senha incorretos. Tente novamente.",
-      })
+
+      // Tratar erros específicos
+      if (error.errors) {
+        // Erros de validação por campo
+        const newErrors: Record<string, string> = {}
+
+        if (error.errors.email) {
+          newErrors.email = error.errors.email
+        }
+
+        if (error.errors.password) {
+          newErrors.senha = error.errors.password
+        }
+
+        if (Object.keys(newErrors).length > 0) {
+          setLoginErrors(newErrors)
+        } else {
+          // Erro geral
+          setApiError(error.message || "Credenciais inválidas. Verifique seu email e senha.")
+        }
+      } else {
+        // Erro geral
+        setApiError(error.message || "Credenciais inválidas. Verifique seu email e senha.")
+      }
     }
   }
 
   const handleRegisterSubmit = async (e) => {
     e.preventDefault()
 
+    // Limpar erro da API
+    setApiError(null)
+
     if (!validateRegisterForm()) {
-      toast({
-        variant: "destructive",
-        title: "Erro no formulário",
-        description: "Por favor, corrija os erros antes de continuar.",
-      })
       return
     }
 
@@ -195,11 +224,38 @@ export default function LoginPage() {
       }))
     } catch (error) {
       console.error("Erro ao fazer cadastro:", error)
-      toast({
-        variant: "destructive",
-        title: "Erro no cadastro",
-        description: "Não foi possível completar o cadastro. Tente novamente.",
-      })
+
+      // Tratar erros específicos
+      if (error.errors) {
+        // Erros de validação por campo
+        const newErrors: Record<string, string> = {}
+
+        if (error.errors.name) {
+          newErrors.nome = error.errors.name
+        }
+
+        if (error.errors.email) {
+          newErrors.email = error.errors.email
+        }
+
+        if (error.errors.password) {
+          newErrors.senha = error.errors.password
+        }
+
+        if (error.errors.password_confirmation) {
+          newErrors.confirmarSenha = error.errors.password_confirmation
+        }
+
+        if (Object.keys(newErrors).length > 0) {
+          setRegisterErrors(newErrors)
+        } else {
+          // Erro geral
+          setApiError(error.message || "Não foi possível completar o cadastro. Tente novamente.")
+        }
+      } else {
+        // Erro geral
+        setApiError(error.message || "Não foi possível completar o cadastro. Tente novamente.")
+      }
     } finally {
       setIsSubmitting(false)
     }
@@ -220,6 +276,14 @@ export default function LoginPage() {
               <CardDescription>Entre com suas credenciais para acessar sua conta.</CardDescription>
             </CardHeader>
             <CardContent>
+              {apiError && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Erro</AlertTitle>
+                  <AlertDescription>{apiError}</AlertDescription>
+                </Alert>
+              )}
+
               <form onSubmit={handleLoginSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
@@ -263,6 +327,14 @@ export default function LoginPage() {
               <CardDescription>Crie sua conta para acessar os serviços da Academia Murim.</CardDescription>
             </CardHeader>
             <CardContent>
+              {apiError && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Erro</AlertTitle>
+                  <AlertDescription>{apiError}</AlertDescription>
+                </Alert>
+              )}
+
               <form onSubmit={handleRegisterSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="nome">Nome Completo</Label>

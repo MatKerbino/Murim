@@ -11,8 +11,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "@/components/ui/use-toast"
 import { ToastAction } from "@/components/ui/toast"
-import { MapPin, Phone, Mail, Clock } from "lucide-react"
+import { MapPin, Phone, Mail, Clock, AlertCircle } from "lucide-react"
 import { contatoService } from "@/lib/contato-service"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function ContatoPage() {
   const [formData, setFormData] = useState({
@@ -24,6 +25,7 @@ export default function ContatoPage() {
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [apiError, setApiError] = useState<string | null>(null)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -39,6 +41,9 @@ export default function ContatoPage() {
         [name]: "",
       }))
     }
+
+    // Limpar erro da API quando o usuário digita
+    setApiError(null)
   }
 
   const handleSelectChange = (name: string, value: string) => {
@@ -54,6 +59,9 @@ export default function ContatoPage() {
         [name]: "",
       }))
     }
+
+    // Limpar erro da API quando o usuário seleciona uma opção
+    setApiError(null)
   }
 
   const validateForm = () => {
@@ -75,6 +83,8 @@ export default function ContatoPage() {
 
     if (!formData.mensagem.trim()) {
       newErrors.mensagem = "Mensagem é obrigatória"
+    } else if (formData.mensagem.trim().length < 10) {
+      newErrors.mensagem = "A mensagem deve ter pelo menos 10 caracteres"
     }
 
     setErrors(newErrors)
@@ -84,12 +94,10 @@ export default function ContatoPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    // Limpar erro da API
+    setApiError(null)
+
     if (!validateForm()) {
-      toast({
-        variant: "destructive",
-        title: "Erro no formulário",
-        description: "Por favor, corrija os erros no formulário antes de enviar.",
-      })
       return
     }
 
@@ -121,11 +129,42 @@ export default function ContatoPage() {
       })
     } catch (error) {
       console.error("Erro ao enviar mensagem:", error)
-      toast({
-        variant: "destructive",
-        title: "Erro ao enviar mensagem",
-        description: "Não foi possível enviar sua mensagem. Tente novamente mais tarde.",
-      })
+
+      // Tratar erros específicos
+      if (error.errors) {
+        // Erros de validação por campo
+        const newErrors: Record<string, string> = {}
+
+        if (error.errors.nome) {
+          newErrors.nome = error.errors.nome
+        }
+
+        if (error.errors.email) {
+          newErrors.email = error.errors.email
+        }
+
+        if (error.errors.telefone) {
+          newErrors.telefone = error.errors.telefone
+        }
+
+        if (error.errors.assunto) {
+          newErrors.assunto = error.errors.assunto
+        }
+
+        if (error.errors.mensagem) {
+          newErrors.mensagem = error.errors.mensagem
+        }
+
+        if (Object.keys(newErrors).length > 0) {
+          setErrors(newErrors)
+        } else {
+          // Erro geral
+          setApiError(error.message || "Não foi possível enviar sua mensagem. Tente novamente mais tarde.")
+        }
+      } else {
+        // Erro geral
+        setApiError(error.message || "Não foi possível enviar sua mensagem. Tente novamente mais tarde.")
+      }
     } finally {
       setIsSubmitting(false)
     }
@@ -149,6 +188,14 @@ export default function ContatoPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {apiError && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Erro</AlertTitle>
+                <AlertDescription>{apiError}</AlertDescription>
+              </Alert>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -182,7 +229,14 @@ export default function ContatoPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="telefone">Telefone</Label>
-                  <Input id="telefone" name="telefone" value={formData.telefone} onChange={handleChange} />
+                  <Input
+                    id="telefone"
+                    name="telefone"
+                    value={formData.telefone}
+                    onChange={handleChange}
+                    className={errors.telefone ? "border-red-500" : ""}
+                  />
+                  {errors.telefone && <p className="text-red-500 text-sm">{errors.telefone}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="assunto">
@@ -280,23 +334,23 @@ export default function ContatoPage() {
             </div>
           </CardContent>
         </Card>
+      </div>
 
-        {/* Google Maps */}
-        <div className="mt-6">
-          <h3 className="text-lg font-bold text-murim-blue mb-2">Nossa Localização</h3>
-          <div className="w-full h-[300px] rounded-md overflow-hidden border border-gray-200">
-            <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3657.1976900292297!2d-46.65390508502264!3d-23.56507968468041!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94ce59c8da0aa315%3A0xd59f9431f2c9776a!2sAv.%20Paulista%2C%20S%C3%A3o%20Paulo%20-%20SP!5e0!3m2!1spt-BR!2sbr!4v1615589346212!5m2!1spt-BR!2sbr"
-              width="100%"
-              height="100%"
-              style={{ border: 0 }}
-              allowFullScreen={false}
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              title="Localização Academia Murim"
-              className="rounded-md"
-            ></iframe>
-          </div>
+      {/* Google Maps - Full Width */}
+      <div className="mt-12">
+        <h3 className="text-xl font-bold text-murim-blue mb-4 text-center">Nossa Localização</h3>
+        <div className="w-full h-[400px] rounded-md overflow-hidden border border-gray-200">
+          <iframe
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3657.1976900292297!2d-46.65390508502264!3d-23.56507968468041!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94ce59c8da0aa315%3A0xd59f9431f2c9776a!2sAv.%20Paulista%2C%20S%C3%A3o%20Paulo%20-%20SP!5e0!3m2!1spt-BR!2sbr!4v1615589346212!5m2!1spt-BR!2sbr"
+            width="100%"
+            height="100%"
+            style={{ border: 0 }}
+            allowFullScreen={false}
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            title="Localização Academia Murim"
+            className="rounded-md"
+          ></iframe>
         </div>
       </div>
     </div>
