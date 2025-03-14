@@ -22,6 +22,7 @@ class Pagamento extends Model
         'metodo_pagamento',
         'codigo_transacao',
         'observacoes',
+        'tipo',
     ];
 
     protected $casts = [

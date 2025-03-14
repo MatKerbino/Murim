@@ -22,6 +22,7 @@ return new class extends Migration
             $table->string('metodo_pagamento')->nullable();
             $table->string('codigo_transacao')->nullable();
             $table->text('observacoes')->nullable();
+            $table->enum('tipo', ['loja', 'agendamento', 'plano'])->default('loja');
             $table->timestamps();
             $table->softDeletes();
         });

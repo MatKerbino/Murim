@@ -20,7 +20,8 @@ class UsuarioController extends Controller
     {
         $usuarios = User::select('users.*')
             ->selectRaw('(SELECT COUNT(*) FROM sessions WHERE sessions.user_id = users.id AND last_activity > ?) as is_online', [Carbon::now()->subMinutes(15)->timestamp])
-            ->selectRaw('(SELECT EXISTS(SELECT 1 FROM alunos WHERE alunos.user_id = users.id)) as is_aluno')
+            ->leftJoin('alunos', 'alunos.user_id', '=', 'users.id')
+            ->selectRaw('COALESCE(alunos.id, 0) as is_aluno')
             ->orderBy('name')
             ->get()
             ->map(function ($user) {
