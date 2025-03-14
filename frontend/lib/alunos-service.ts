@@ -22,54 +22,68 @@ export interface Aluno {
   }
 }
 
+const getAxiosConfig = () => {
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
+  console.log("Token retrieved:", token); // Debugging line to check token retrieval
+  return {
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  }
+}
+
 export const alunosService = {
   async getAlunos(): Promise<Aluno[]> {
     try {
-      const response = await axios.get(`${API_URL}/alunos`)
+      const response = await axios.get(`${API_URL}/alunos`, getAxiosConfig())
       return response.data.data || response.data
     } catch (error) {
-      console.error("Error fetching alunos:", error)
+      if (axios.isAxiosError(error)) {
+        console.error("Error fetching alunos:", error.response?.data || error.message)
+      } else {
+        console.error("Unexpected error:", error)
+      }
       throw error
     }
   },
 
   async getAluno(id: number): Promise<Aluno> {
     try {
-      const response = await axios.get(`${API_URL}/alunos/${id}`)
-      return response.data.data || response.data
+      const response = await axios.get(`${API_URL}/alunos/${id}`, getAxiosConfig())
+      return response.data.data
     } catch (error) {
-      console.error(`Error fetching aluno with id ${id}:`, error)
+      console.error("Erro ao buscar aluno:", error)
       throw error
     }
   },
 
-  async createAluno(aluno: Omit<Aluno, "id" | "created_at" | "updated_at" | "plano">): Promise<Aluno> {
+  async createAluno(aluno: Omit<Aluno, "id" | "createdAt" | "updatedAt" | "plano">): Promise<Aluno> {
     try {
-      const response = await axios.post(`${API_URL}/alunos`, aluno)
-      return response.data.data || response.data
+      const response = await axios.post(`${API_URL}/alunos`, aluno, getAxiosConfig())
+      return response.data.data
     } catch (error) {
-      console.error("Error creating aluno:", error)
+      console.error("Erro ao criar aluno:", error)
       throw error
     }
   },
 
   async updateAluno(id: number, aluno: Partial<Aluno>): Promise<Aluno> {
     try {
-      const response = await axios.post(`${API_URL}/alunos/${id}?_method=PUT`, aluno)
-      return response.data.data || response.data
+      const response = await axios.put(`${API_URL}/alunos/${id}`, aluno, getAxiosConfig())
+      return response.data.data
     } catch (error) {
-      console.error(`Error updating aluno with id ${id}:`, error)
+      console.error("Erro ao atualizar aluno:", error)
       throw error
     }
   },
 
   async deleteAluno(id: number): Promise<void> {
     try {
-      await axios.delete(`${API_URL}/alunos/${id}`)
+      await axios.delete(`${API_URL}/alunos/${id}`, getAxiosConfig())
     } catch (error) {
-      console.error(`Error deleting aluno with id ${id}:`, error)
+      console.error("Erro ao excluir aluno:", error)
       throw error
     }
   },
 }
-

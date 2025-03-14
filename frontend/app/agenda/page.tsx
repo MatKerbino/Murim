@@ -155,38 +155,41 @@ export default function AgendaPage() {
         <ErrorMessage title="Erro ao carregar personais" message={error} onRetry={handleRetry} />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <Card className="border shadow-sm transition-all duration-300 hover:shadow-lg h-full">
+          <Card className="border shadow-sm transition-all duration-300 hover:shadow-lg h-full dark:border-border dark:bg-background">
             <CardHeader>
               <CardTitle className="text-primary">Selecione a Data</CardTitle>
               <CardDescription>Escolha um dia disponível para seu agendamento</CardDescription>
             </CardHeader>
             <CardContent className="flex justify-center items-center h-full pb-8">
-              <Calendar
-                mode="single"
-                selected={date}
-                onSelect={setDate}
-                className="rounded-md border w-full max-w-full"
-                classNames={{
-                  root: "w-full",
-                  table: "w-full",
-                  head_cell: "w-full",
-                  cell: "w-full h-12 text-center p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-                  day: "h-12 w-12 p-0 font-normal aria-selected:opacity-100 hover:bg-primary/10 rounded-md transition-colors",
-                  day_selected:
-                    "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-                  nav_button: "h-9 w-9 bg-transparent p-0 opacity-50 hover:opacity-100",
-                }}
-                disabled={(date) => {
-                  const today = new Date()
-                  today.setHours(0, 0, 0, 0)
-                  return date < today || date.getDay() === 0 // Desabilita domingos
-                }}
-              />
+              <div className="w-[350px] h-[350px] mx-auto">
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={setDate}
+                  className="rounded-md border w-full"
+                  classNames={{
+                    root: "w-full",
+                    table: "w-full",
+                    head_cell: "w-full text-muted-foreground",
+                    cell: "w-full h-9 text-center p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+                    day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-primary/10 rounded-md transition-colors",
+                    day_selected:
+                      "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+                    day_today: "bg-accent/50 text-accent-foreground",
+                    nav_button: "h-9 w-9 bg-transparent p-0 opacity-50 hover:opacity-100",
+                  }}
+                  disabled={(date) => {
+                    const today = new Date()
+                    today.setHours(0, 0, 0, 0)
+                    return date < today || date.getDay() === 0 // Desabilita domingos
+                  }}
+                />
+              </div>
             </CardContent>
           </Card>
 
           <div className="space-y-8">
-            <Card className="border shadow-sm transition-all duration-300 hover:shadow-lg">
+            <Card className="border shadow-sm transition-all duration-300 hover:shadow-lg dark:border-border dark:bg-background">
               <CardHeader>
                 <CardTitle className="text-secondary">Detalhes do Agendamento</CardTitle>
                 <CardDescription>Preencha as informações para concluir seu agendamento</CardDescription>
@@ -279,7 +282,7 @@ export default function AgendaPage() {
             </Card>
 
             {selectedPersonal && (
-              <Card className="border shadow-sm overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:shadow-lg">
+              <Card className="border shadow-sm overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:shadow-lg dark:border-border dark:bg-background">
                 <div className="relative h-48 w-full overflow-hidden">
                   <Image
                     src={selectedPersonal.foto || "/placeholder.svg?height=200&width=400"}

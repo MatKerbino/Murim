@@ -11,8 +11,22 @@ import { toast } from "@/components/ui/use-toast"
 import { ErrorMessage } from "@/components/ui/error-message"
 import { comentariosService } from "@/lib/comentarios-service"
 import { Search, CheckCircle, XCircle, Trash2 } from "lucide-react"
-import type { Comentario } from "@/lib/comentarios-service"
-import type { ApiError } from "@/lib/api"
+
+// Definindo a interface Comentario
+interface Comentario {
+  id: number
+  conteudo: string
+  aprovado: boolean
+  created_at: string
+  user?: {
+    id: number
+    name: string
+  }
+  dica?: {
+    id: number
+    titulo: string
+  }
+}
 
 export default function AdminComentariosPage() {
   const [comentarios, setComentarios] = useState<Comentario[]>([])
@@ -32,7 +46,7 @@ export default function AdminComentariosPage() {
       setComentarios(data)
     } catch (error) {
       console.error("Erro ao carregar comentários:", error)
-      setError((error as ApiError).message || "Não foi possível carregar os comentários. Tente novamente mais tarde.")
+      setError("Não foi possível carregar os comentários. Tente novamente mais tarde.")
     } finally {
       setIsLoading(false)
     }
@@ -89,7 +103,9 @@ export default function AdminComentariosPage() {
     (comentario) =>
       comentario.conteudo.toLowerCase().includes(searchTerm.toLowerCase()) ||
       comentario.user?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      comentario.dica?.titulo.toLowerCase().includes(searchTerm.toLowerCase()),
+      "" ||
+      comentario.dica?.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      "",
   )
 
   return (
@@ -147,8 +163,8 @@ export default function AdminComentariosPage() {
                 <TableBody>
                   {filteredComentarios.map((comentario) => (
                     <TableRow key={comentario.id}>
-                      <TableCell>{comentario.user?.name}</TableCell>
-                      <TableCell>{comentario.dica?.titulo}</TableCell>
+                      <TableCell>{comentario.user?.name || "Usuário"}</TableCell>
+                      <TableCell>{comentario.dica?.titulo || "Dica"}</TableCell>
                       <TableCell className="max-w-xs truncate">{comentario.conteudo}</TableCell>
                       <TableCell>{new Date(comentario.created_at).toLocaleDateString("pt-BR")}</TableCell>
                       <TableCell>

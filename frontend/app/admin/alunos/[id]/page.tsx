@@ -6,49 +6,44 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { getAluno, getPlano } from "@/lib/api"
-import type { Aluno, Plano } from "@/lib/api"
+import { alunosService } from "@/lib/alunos-service"
+import { planosService } from "@/lib/planos-service"
+import { ErrorMessage } from "@/components/ui/error-message"
+
+// Definindo a interface Plano
+interface Plano {
+  id: number
+  nome: string
+  descricao: string
+  valor: number
+  duracao: number
+  beneficios: string[]
+  createdAt: string
+  updatedAt: string
+}
 
 export default function VisualizarAlunoPage({ params }: { params: { id: string } }) {
   const router = useRouter()
-  const [aluno, setAluno] = useState<Aluno | null>(null)
+  const [aluno, setAluno] = useState<any | null>(null)
   const [plano, setPlano] = useState<Plano | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     async function loadData() {
       setIsLoading(true)
+      setError(null)
       try {
-        const alunoData = await getAluno(Number.parseInt(params.id))
+        const alunoData = await alunosService.getAluno(Number.parseInt(params.id))
         setAluno(alunoData)
 
-        const planoData = await getPlano(alunoData.planoId)
-        setPlano(planoData)
+        if (alunoData.planoId) {
+          const planoData = await planosService.getPlano(alunoData.planoId)
+          setPlano(planoData)
+        }
       } catch (error) {
         console.error("Erro ao carregar dados:", error)
-        // Dados de fallback
-        setAluno({
-          id: Number.parseInt(params.id),
-          nome: "João Silva",
-          email: "joao@example.com",
-          telefone: "11999999999",
-          dataNascimento: "1990-05-15",
-          matricula: "A001",
-          planoId: 1,
-          createdAt: "2023-01-10T10:00:00Z",
-          updatedAt: "2023-01-10T10:00:00Z",
-        })
-
-        setPlano({
-          id: 1,
-          nome: "Mensal",
-          descricao: "Plano mensal básico",
-          valor: 99.9,
-          duracao: 1,
-          beneficios: ["Acesso à academia"],
-          createdAt: "",
-          updatedAt: "",
-        })
+        setError("Não foi possível carregar os dados do aluno. Tente novamente mais tarde.")
       } finally {
         setIsLoading(false)
       }
@@ -60,9 +55,13 @@ export default function VisualizarAlunoPage({ params }: { params: { id: string }
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-full">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-murim-blue"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     )
+  }
+
+  if (error) {
+    return <ErrorMessage title="Erro ao carregar aluno" message={error} onRetry={() => window.location.reload()} />
   }
 
   if (!aluno) {
@@ -174,36 +173,34 @@ export default function VisualizarAlunoPage({ params }: { params: { id: string }
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow>
-                    <TableCell>10/01/2023</TableCell>
-                    <TableCell>Mensal</TableCell>
-                    <TableCell>R$ 99,90</TableCell>
-                    <TableCell>
-                      <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                        Pago
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>10/02/2023</TableCell>
-                    <TableCell>Mensal</TableCell>
-                    <TableCell>R$ 99,90</TableCell>
-                    <TableCell>
-                      <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                        Pago
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>10/03/2023</TableCell>
-                    <TableCell>Mensal</TableCell>
-                    <TableCell>R$ 99,90</TableCell>
-                    <TableCell>
-                      <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                        Pago
-                      </span>
-                    </TableCell>
-                  </TableRow>
+                  {aluno.pagamentos && aluno.pagamentos.length > 0 ? (
+                    aluno.pagamentos.map((pagamento) => (
+                      <TableRow key={pagamento.id}>
+                        <TableCell>{new Date(pagamento.dataVencimento).toLocaleDateString("pt-BR")}</TableCell>
+                        <TableCell>{pagamento.plano?.nome || "Plano"}</TableCell>
+                        <TableCell>R$ {pagamento.valor.toFixed(2).replace(".", ",")}</TableCell>
+                        <TableCell>
+                          <span
+                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                              pagamento.status === "pago"
+                                ? "bg-green-100 text-green-800"
+                                : pagamento.status === "pendente"
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {pagamento.status.charAt(0).toUpperCase() + pagamento.status.slice(1)}
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-4">
+                        Nenhum pagamento registrado.
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -227,36 +224,34 @@ export default function VisualizarAlunoPage({ params }: { params: { id: string }
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow>
-                    <TableCell>15/03/2023</TableCell>
-                    <TableCell>10:00 - 11:00</TableCell>
-                    <TableCell>Pedro Costa</TableCell>
-                    <TableCell>
-                      <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                        Concluído
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>22/03/2023</TableCell>
-                    <TableCell>10:00 - 11:00</TableCell>
-                    <TableCell>Pedro Costa</TableCell>
-                    <TableCell>
-                      <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                        Concluído
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>29/03/2023</TableCell>
-                    <TableCell>10:00 - 11:00</TableCell>
-                    <TableCell>Pedro Costa</TableCell>
-                    <TableCell>
-                      <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
-                        Agendado
-                      </span>
-                    </TableCell>
-                  </TableRow>
+                  {aluno.agendamentos && aluno.agendamentos.length > 0 ? (
+                    aluno.agendamentos.map((agendamento) => (
+                      <TableRow key={agendamento.id}>
+                        <TableCell>{new Date(agendamento.data).toLocaleDateString("pt-BR")}</TableCell>
+                        <TableCell>{agendamento.horario}</TableCell>
+                        <TableCell>{agendamento.personal?.nome || "Personal"}</TableCell>
+                        <TableCell>
+                          <span
+                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                              agendamento.status === "confirmado"
+                                ? "bg-green-100 text-green-800"
+                                : agendamento.status === "pendente"
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {agendamento.status.charAt(0).toUpperCase() + agendamento.status.slice(1)}
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-4">
+                        Nenhum agendamento registrado.
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </CardContent>

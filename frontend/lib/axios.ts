@@ -13,11 +13,11 @@ const axiosInstance = axios.create({
 // Add a request interceptor for authentication tokens if needed
 axiosInstance.interceptors.request.use(
   (config) => {
-    // You can add authentication headers here if needed
-    // const token = localStorage.getItem('token');
-    // if (token) {
-    //   config.headers.Authorization = `Bearer ${token}`;
-    // }
+    const token = localStorage.getItem('token');
+    if (token) {
+      console.log("Token enviado:", token); // Log para verificar o token
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
   },
   (error) => {

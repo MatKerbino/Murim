@@ -18,8 +18,20 @@ import {
 } from "@/components/ui/pagination"
 import { Plus, MoreHorizontal, Search } from "lucide-react"
 import { ErrorMessage } from "@/components/ui/error-message"
-import { getProdutos } from "@/lib/api"
-import type { Produto, ApiError } from "@/lib/api"
+import { produtosService } from "@/lib/produtos-service"
+
+// Definindo a interface Produto
+interface Produto {
+  id: number
+  nome: string
+  descricao: string
+  preco: number
+  categoria: string
+  imagem: string | null
+  estoque: number
+  createdAt: string
+  updatedAt: string
+}
 
 export default function ProdutosPage() {
   const [produtos, setProdutos] = useState<Produto[]>([])
@@ -37,11 +49,11 @@ export default function ProdutosPage() {
     setIsLoading(true)
     setError(null)
     try {
-      const data = await getProdutos()
+      const data = await produtosService.getProdutos()
       setProdutos(data)
     } catch (error) {
       console.error("Erro ao carregar produtos:", error)
-      setError((error as ApiError).message)
+      setError("Não foi possível carregar os produtos. Tente novamente mais tarde.")
     } finally {
       setIsLoading(false)
     }
@@ -50,12 +62,12 @@ export default function ProdutosPage() {
   const handleDelete = async (id: number) => {
     if (window.confirm("Tem certeza que deseja excluir este produto?")) {
       try {
-        // Simulação de exclusão
-        await new Promise((resolve) => setTimeout(resolve, 1000))
+        await produtosService.deleteProduto(id)
         setProdutos(produtos.filter((produto) => produto.id !== id))
+        alert("Produto excluído com sucesso!")
       } catch (error) {
         console.error("Erro ao excluir produto:", error)
-        alert((error as ApiError).message)
+        alert("Erro ao excluir produto. Tente novamente.")
       }
     }
   }

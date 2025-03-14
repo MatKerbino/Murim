@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { Menu, UserCircle, Calendar, Settings, LogOut } from "lucide-react"
+import { Menu, UserCircle, Calendar, Settings, LogOut, ShoppingCart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import {
@@ -15,6 +15,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/contexts/auth-context"
+import { Badge } from "@/components/ui/badge"
+import { carrinhoService } from "@/lib/carrinho-service"
 
 const routes = [
   {
@@ -28,6 +30,10 @@ const routes = [
   {
     href: "/agenda",
     label: "Agendar Personal",
+  },
+  {
+    href: "/planos",
+    label: "Planos",
   },
   {
     href: "/dicas",
@@ -46,6 +52,30 @@ const routes = [
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false)
   const { isAuthenticated, isAdmin, user, logout } = useAuth()
+  const [cartItemCount, setCartItemCount] = useState(0)
+
+  useEffect(() => {
+    // Verificar itens no carrinho
+    if (isAuthenticated) {
+      const checkCartItems = async () => {
+        try {
+          const cartItems = await carrinhoService.getCartItems()
+          setCartItemCount(cartItems.length)
+        } catch (error) {
+          console.error("Erro ao buscar itens do carrinho:", error)
+          setCartItemCount(0)
+        }
+      }
+
+      checkCartItems()
+
+      // Atualizar a cada 30 segundos
+      const interval = setInterval(checkCartItems, 30000)
+      return () => clearInterval(interval)
+    } else {
+      setCartItemCount(0)
+    }
+  }, [isAuthenticated])
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
@@ -74,6 +104,16 @@ export default function Header() {
         <div className="flex items-center gap-2">
           {isAuthenticated ? (
             <>
+              {cartItemCount > 0 && (
+                <Link href="/carrinho">
+                  <Button variant="outline" size="icon" className="relative">
+                    <ShoppingCart className="h-5 w-5" />
+                    <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0">
+                      {cartItemCount}
+                    </Badge>
+                  </Button>
+                </Link>
+              )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
@@ -94,6 +134,12 @@ export default function Header() {
                     <Link href="/perfil" className="cursor-pointer">
                       <UserCircle className="mr-2 h-4 w-4" />
                       <span>Meu Perfil</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/perfil?tab=planos" className="cursor-pointer">
+                      <Calendar className="mr-2 h-4 w-4" />
+                      <span>Meus Planos</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
@@ -163,6 +209,14 @@ export default function Header() {
                 <div className="flex items-center justify-between mt-4">
                   {isAuthenticated ? (
                     <div className="space-y-2 w-full">
+                      {cartItemCount > 0 && (
+                        <Link href="/carrinho" onClick={() => setIsOpen(false)} className="w-full block">
+                          <Button variant="outline" size="sm" className="w-full">
+                            <ShoppingCart className="mr-2 h-4 w-4" />
+                            Carrinho ({cartItemCount})
+                          </Button>
+                        </Link>
+                      )}
                       <div className="flex items-center gap-2 border rounded-full px-2 py-1">
                         <div className="relative w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                           <UserCircle className="h-6 w-6 text-primary" />
@@ -173,6 +227,12 @@ export default function Header() {
                         <Button variant="outline" size="sm" className="w-full">
                           <UserCircle className="mr-2 h-4 w-4" />
                           Meu Perfil
+                        </Button>
+                      </Link>
+                      <Link href="/perfil?tab=planos" onClick={() => setIsOpen(false)} className="w-full block">
+                        <Button variant="outline" size="sm" className="w-full">
+                          <Calendar className="mr-2 h-4 w-4" />
+                          Meus Planos
                         </Button>
                       </Link>
                       {isAdmin && (

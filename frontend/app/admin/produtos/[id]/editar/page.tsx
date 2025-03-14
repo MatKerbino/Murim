@@ -13,8 +13,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/components/ui/use-toast"
 import { ImageUpload } from "@/components/ui/image-upload"
 import { ErrorMessage } from "@/components/ui/error-message"
-import { getProduto } from "@/lib/api"
-import type { Produto, ApiError } from "@/lib/api"
+import { produtosService } from "@/lib/produtos-service"
+
+// Definindo a interface Produto
+interface Produto {
+  id: number
+  nome: string
+  descricao: string
+  preco: number
+  categoria: string
+  imagem: string | null
+  estoque: number
+  createdAt: string
+  updatedAt: string
+}
 
 export default function EditarProdutoPage({ params }: { params: { id: string } }) {
   const router = useRouter()
@@ -47,11 +59,11 @@ export default function EditarProdutoPage({ params }: { params: { id: string } }
       setIsLoading(true)
       setError(null)
       try {
-        const produtoData = await getProduto(Number.parseInt(params.id))
+        const produtoData = await produtosService.getProduto(Number.parseInt(params.id))
         setFormData(produtoData)
       } catch (error) {
         console.error("Erro ao carregar produto:", error)
-        setError((error as ApiError).message)
+        setError("Não foi possível carregar os dados do produto. Tente novamente mais tarde.")
       } finally {
         setIsLoading(false)
       }
@@ -79,18 +91,33 @@ export default function EditarProdutoPage({ params }: { params: { id: string } }
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSaving(true)
+    setError(null)
 
     try {
+      // Criar um FormData para enviar os dados, incluindo a imagem
+      const formDataToSend = new FormData()
+
+      // Adicionar todos os campos do formulário ao FormData
+      Object.entries(formData).forEach(([key, value]) => {
+        if (key !== "imagem" || (key === "imagem" && typeof value === "string" && !value.startsWith("data:"))) {
+          formDataToSend.append(key, String(value))
+        }
+      })
+
+      // Se for uma imagem base64 (upload), converter para arquivo
+      if (formData.imagem && formData.imagem.startsWith("data:")) {
+        const blob = await fetch(formData.imagem).then((r) => r.blob())
+        formDataToSend.append("imagem", blob, "produto.jpg")
+      }
+
       if (params.id === "novo") {
-        // Simulação de criação
-        await new Promise((resolve) => setTimeout(resolve, 1500))
+        await produtosService.createProduto(formDataToSend)
         toast({
           title: "Produto criado com sucesso!",
           description: "O novo produto foi adicionado ao sistema.",
         })
       } else {
-        // Simulação de atualização
-        await new Promise((resolve) => setTimeout(resolve, 1500))
+        await produtosService.updateProduto(Number.parseInt(params.id), formDataToSend)
         toast({
           title: "Produto atualizado com sucesso!",
           description: "Os dados do produto foram atualizados.",
@@ -101,45 +128,15 @@ export default function EditarProdutoPage({ params }: { params: { id: string } }
       router.push("/admin/produtos")
     } catch (error) {
       console.error("Erro ao salvar produto:", error)
+      setError("Não foi possível salvar os dados do produto. Tente novamente.")
       toast({
         variant: "destructive",
         title: "Erro ao salvar",
-        description: (error as ApiError).message || "Não foi possível salvar os dados do produto. Tente novamente.",
+        description: "Não foi possível salvar os dados do produto. Tente novamente.",
       })
     } finally {
       setIsSaving(false)
     }
-  }
-
-  const handleRetry = () => {
-    if (params.id === "novo") {
-      setError(null)
-      return
-    }
-
-    setError(null)
-    setIsLoading(true)
-    getProduto(Number.parseInt(params.id))
-      .then((data) => {
-        setFormData(data)
-        setIsLoading(false)
-      })
-      .catch((error) => {
-        console.error("Erro ao carregar produto:", error)
-        setError((error as ApiError).message)
-        setIsLoading(false)
-      })
-  }
-
-  if (error) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold tracking-tight text-primary">
-          {params.id === "novo" ? "Novo Produto" : "Editar Produto"}
-        </h1>
-        <ErrorMessage title="Erro ao carregar produto" message={error} onRetry={handleRetry} />
-      </div>
-    )
   }
 
   if (isLoading) {
@@ -151,6 +148,17 @@ export default function EditarProdutoPage({ params }: { params: { id: string } }
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold tracking-tight text-primary">
+          {params.id === "novo" ? "Novo Produto" : "Editar Produto"}
+        </h1>
+        <ErrorMessage title="Erro ao carregar produto" message={error} onRetry={() => window.location.reload()} />
       </div>
     )
   }
@@ -239,8 +247,8 @@ export default function EditarProdutoPage({ params }: { params: { id: string } }
               <div className="flex flex-col items-center justify-center">
                 <ImageUpload value={formData.imagem || ""} onChange={handleImageChange} label="Imagem do Produto" />
                 <p className="text-sm text-muted-foreground mt-2 text-center">
-                  Faça upload de uma imagem para o produto. Recomendamos imagens quadradas com pelo menos 500x500
-                  pixels.
+                  Faça upload de uma imagem para o produto ou informe o caminho de uma imagem existente (ex:
+                  /images/produtos/produto.jpg). Recomendamos imagens quadradas com pelo menos 500x500 pixels.
                 </p>
               </div>
             </div>

@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -15,13 +15,15 @@ import { toast } from "@/components/ui/use-toast"
 import { ErrorMessage } from "@/components/ui/error-message"
 import { useAuth } from "@/contexts/auth-context"
 import { agendamentosService } from "@/lib/agendamentos-service"
-import { Calendar, Clock, User, CheckCircle, XCircle, AlertCircle } from "lucide-react"
+import { Calendar, Clock, User, CheckCircle, XCircle, AlertCircle, CreditCard } from "lucide-react"
 import type { Agendamento } from "@/lib/agendamentos-service"
-import type { ApiError } from "@/lib/api"
+import { planosService, type Plano } from "@/lib/planos-service"
 
 export default function PerfilPage() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const tabParam = searchParams.get("tab")
 
   // Redirecionar para login se não estiver autenticado
   useEffect(() => {
@@ -31,9 +33,11 @@ export default function PerfilPage() {
   }, [authLoading, isAuthenticated, router])
 
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [planosAtivos, setPlanosAtivos] = useState<Plano[]>([])
+  const [isLoadingAgendamentos, setIsLoadingAgendamentos] = useState(true)
+  const [isLoadingPlanos, setIsLoadingPlanos] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState("agendamentos")
+  const [activeTab, setActiveTab] = useState(tabParam || "agendamentos")
   const [formData, setFormData] = useState({
     name: user?.name || "",
     email: user?.email || "",
@@ -45,25 +49,48 @@ export default function PerfilPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
+    if (tabParam) {
+      setActiveTab(tabParam)
+    }
+  }, [tabParam])
+
+  useEffect(() => {
     async function loadAgendamentos() {
       if (!isAuthenticated) return
 
-      setIsLoading(true)
+      setIsLoadingAgendamentos(true)
       setError(null)
       try {
         const data = await agendamentosService.getMeusAgendamentos()
         setAgendamentos(data)
       } catch (error) {
         console.error("Erro ao carregar agendamentos:", error)
-        setError(
-          (error as ApiError).message || "Não foi possível carregar seus agendamentos. Tente novamente mais tarde.",
-        )
       } finally {
-        setIsLoading(false)
+        setIsLoadingAgendamentos(false)
+      }
+    }
+
+    async function loadPlanosAtivos() {
+      if (!isAuthenticated) return
+
+      setIsLoadingPlanos(true)
+      try {
+        const data = await planosService.getMeusPlanos()
+        setPlanosAtivos(data)
+      } catch (error) {
+        console.error("Erro ao carregar planos:", error)
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "Não foi possível carregar seus planos. Tente novamente mais tarde.",
+        })
+      } finally {
+        setIsLoadingPlanos(false)
       }
     }
 
     loadAgendamentos()
+    loadPlanosAtivos()
   }, [isAuthenticated])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -215,13 +242,14 @@ export default function PerfilPage() {
       <div className="flex flex-col items-center justify-center space-y-4 text-center mb-10">
         <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-primary">Meu Perfil</h1>
         <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
-          Gerencie suas informações e acompanhe seus agendamentos
+          Gerencie suas informações, planos e acompanhe seus agendamentos
         </p>
       </div>
 
       <Tabs defaultValue="agendamentos" value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="agendamentos">Meus Agendamentos</TabsTrigger>
+          <TabsTrigger value="planos">Meus Planos</TabsTrigger>
           <TabsTrigger value="perfil">Dados Pessoais</TabsTrigger>
         </TabsList>
 
@@ -232,7 +260,7 @@ export default function PerfilPage() {
               <CardDescription>Acompanhe seus agendamentos com personal trainers</CardDescription>
             </CardHeader>
             <CardContent>
-              {isLoading ? (
+              {isLoadingAgendamentos ? (
                 <div className="space-y-4">
                   {Array(3)
                     .fill(0)
@@ -307,6 +335,78 @@ export default function PerfilPage() {
                   <p className="text-muted-foreground">Você ainda não possui agendamentos.</p>
                   <Button className="mt-4" asChild>
                     <a href="/agenda">Agendar Personal</a>
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="planos" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Meus Planos</CardTitle>
+              <CardDescription>Visualize seus planos ativos e histórico de assinaturas</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoadingPlanos ? (
+                <div className="space-y-4">
+                  {Array(2)
+                    .fill(0)
+                    .map((_, i) => (
+                      <Card key={i} className="border">
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-center">
+                            <div className="space-y-2">
+                              <Skeleton className="h-5 w-32" />
+                              <Skeleton className="h-4 w-48" />
+                            </div>
+                            <Skeleton className="h-6 w-24" />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                </div>
+              ) : planosAtivos.length > 0 ? (
+                <div className="space-y-4">
+                  {planosAtivos.map((plano) => (
+                    <Card key={plano.id} className="border">
+                      <CardContent className="p-4">
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <CreditCard className="h-4 w-4 text-primary" />
+                              <span className="font-medium">{plano.nome}</span>
+                            </div>
+                            <p className="text-sm text-muted-foreground">{plano.descricao}</p>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="bg-green-50 text-green-600">
+                                Ativo
+                              </Badge>
+                              <span className="text-sm text-muted-foreground">
+                                Valor: R$ {plano.valor.toFixed(2).replace(".", ",")}
+                              </span>
+                              <span className="text-sm text-muted-foreground">
+                                Duração: {plano.duracao} {plano.duracao === 1 ? "mês" : "meses"}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div>
+                            <Button variant="outline" size="sm">
+                              Ver Detalhes
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">Você ainda não possui planos ativos.</p>
+                  <Button className="mt-4" asChild>
+                    <a href="/planos">Ver Planos Disponíveis</a>
                   </Button>
                 </div>
               )}

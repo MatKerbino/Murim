@@ -16,97 +16,59 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination"
 import { Plus, MoreHorizontal, Search } from "lucide-react"
-import { getAlunos } from "@/lib/api"
-import type { Aluno } from "@/lib/api"
+import { alunosService } from "@/lib/alunos-service"
+import { ErrorMessage } from "@/components/ui/error-message"
+
+// Definindo a interface Aluno aqui para não depender do arquivo api.ts
+interface Aluno {
+  id: number
+  nome: string
+  email: string
+  telefone: string
+  dataNascimento: string
+  matricula: string
+  planoId: number
+  createdAt: string
+  updatedAt: string
+}
 
 export default function AlunosPage() {
   const [alunos, setAlunos] = useState<Aluno[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
 
   useEffect(() => {
-    async function loadAlunos() {
-      setIsLoading(true)
-      try {
-        const data = await getAlunos()
-        setAlunos(data)
-      } catch (error) {
-        console.error("Erro ao carregar alunos:", error)
-        // Dados de fallback em caso de erro na API
-        setAlunos([
-          {
-            id: 1,
-            nome: "João Silva",
-            email: "joao@example.com",
-            telefone: "11999999999",
-            dataNascimento: "1990-05-15",
-            matricula: "A001",
-            planoId: 1,
-            createdAt: "2023-01-10T10:00:00Z",
-            updatedAt: "2023-01-10T10:00:00Z",
-          },
-          {
-            id: 2,
-            nome: "Maria Oliveira",
-            email: "maria@example.com",
-            telefone: "11888888888",
-            dataNascimento: "1985-08-22",
-            matricula: "A002",
-            planoId: 2,
-            createdAt: "2023-01-15T14:30:00Z",
-            updatedAt: "2023-01-15T14:30:00Z",
-          },
-          {
-            id: 3,
-            nome: "Pedro Santos",
-            email: "pedro@example.com",
-            telefone: "11777777777",
-            dataNascimento: "1995-03-10",
-            matricula: "A003",
-            planoId: 1,
-            createdAt: "2023-02-01T09:15:00Z",
-            updatedAt: "2023-02-01T09:15:00Z",
-          },
-          {
-            id: 4,
-            nome: "Ana Costa",
-            email: "ana@example.com",
-            telefone: "11666666666",
-            dataNascimento: "1992-11-28",
-            matricula: "A004",
-            planoId: 3,
-            createdAt: "2023-02-10T16:45:00Z",
-            updatedAt: "2023-02-10T16:45:00Z",
-          },
-          {
-            id: 5,
-            nome: "Lucas Mendes",
-            email: "lucas@example.com",
-            telefone: "11555555555",
-            dataNascimento: "1988-07-03",
-            matricula: "A005",
-            planoId: 2,
-            createdAt: "2023-02-15T11:20:00Z",
-            updatedAt: "2023-02-15T11:20:00Z",
-          },
-        ])
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
     loadAlunos()
   }, [])
+
+  const loadAlunos = async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const data = await alunosService.getAlunos()
+      setAlunos(data)
+    } catch (error) {
+      console.error("Erro ao carregar alunos:", error)
+      setError("Não foi possível carregar os alunos. Tente novamente mais tarde.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const handleDelete = async (id: number) => {
     if (window.confirm("Tem certeza que deseja excluir este aluno?")) {
       try {
-        // await deleteAluno(id)
+        await alunosService.deleteAluno(id)
         setAlunos(alunos.filter((aluno) => aluno.id !== id))
+
+        // Mostrar mensagem de sucesso
+        alert("Aluno excluído com sucesso!")
       } catch (error) {
         console.error("Erro ao excluir aluno:", error)
+        alert("Erro ao excluir aluno. Tente novamente.")
       }
     }
   }
@@ -154,7 +116,9 @@ export default function AlunosPage() {
             </div>
           </div>
 
-          {isLoading ? (
+          {error ? (
+            <ErrorMessage title="Erro ao carregar alunos" message={error} onRetry={loadAlunos} />
+          ) : isLoading ? (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-murim-blue"></div>
             </div>

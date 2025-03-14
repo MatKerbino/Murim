@@ -10,15 +10,29 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "@/components/ui/use-toast"
-import { getAluno, getPlanos } from "@/lib/api"
-import type { Aluno, Plano } from "@/lib/api"
+import { alunosService } from "@/lib/alunos-service"
+import { planosService } from "@/lib/planos-service"
+import { ErrorMessage } from "@/components/ui/error-message"
+
+// Definindo a interface Plano
+interface Plano {
+  id: number
+  nome: string
+  descricao: string
+  valor: number
+  duracao: number
+  beneficios: string[]
+  createdAt: string
+  updatedAt: string
+}
 
 export default function EditarAlunoPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [planos, setPlanos] = useState<Plano[]>([])
-  const [formData, setFormData] = useState<Partial<Aluno>>({
+  const [formData, setFormData] = useState({
     nome: "",
     email: "",
     telefone: "",
@@ -30,67 +44,27 @@ export default function EditarAlunoPage({ params }: { params: { id: string } }) 
   useEffect(() => {
     async function loadData() {
       setIsLoading(true)
+      setError(null)
       try {
         // Carregar planos
-        const planosData = await getPlanos()
+        const planosData = await planosService.getPlanos()
         setPlanos(planosData)
 
         // Se não for um novo aluno, carregar dados do aluno
         if (params.id !== "novo") {
-          const alunoData = await getAluno(Number.parseInt(params.id))
+          const alunoData = await alunosService.getAluno(Number.parseInt(params.id))
           setFormData({
-            ...alunoData,
+            nome: alunoData.nome,
+            email: alunoData.email,
+            telefone: alunoData.telefone,
             dataNascimento: alunoData.dataNascimento.split("T")[0], // Formatar data para input
+            matricula: alunoData.matricula,
+            planoId: alunoData.planoId,
           })
         }
       } catch (error) {
         console.error("Erro ao carregar dados:", error)
-        // Dados de fallback para planos
-        setPlanos([
-          {
-            id: 1,
-            nome: "Mensal",
-            descricao: "Plano mensal básico",
-            valor: 99.9,
-            duracao: 1,
-            beneficios: ["Acesso à academia"],
-            createdAt: "",
-            updatedAt: "",
-          },
-          {
-            id: 2,
-            nome: "Trimestral",
-            descricao: "Plano trimestral com desconto",
-            valor: 269.9,
-            duracao: 3,
-            beneficios: ["Acesso à academia", "1 sessão com personal"],
-            createdAt: "",
-            updatedAt: "",
-          },
-          {
-            id: 3,
-            nome: "Anual",
-            descricao: "Plano anual com máximo desconto",
-            valor: 899.9,
-            duracao: 12,
-            beneficios: ["Acesso à academia", "2 sessões com personal", "Kit de boas-vindas"],
-            createdAt: "",
-            updatedAt: "",
-          },
-        ])
-
-        // Se não for um novo aluno, carregar dados de fallback
-        if (params.id !== "novo") {
-          setFormData({
-            id: Number.parseInt(params.id),
-            nome: "Nome do Aluno",
-            email: "aluno@example.com",
-            telefone: "11999999999",
-            dataNascimento: "1990-01-01",
-            matricula: "A00" + params.id,
-            planoId: 1,
-          })
-        }
+        setError("Não foi possível carregar os dados necessários. Tente novamente mais tarde.")
       } finally {
         setIsLoading(false)
       }
@@ -111,18 +85,31 @@ export default function EditarAlunoPage({ params }: { params: { id: string } }) 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSaving(true)
+    setError(null)
 
     try {
       if (params.id === "novo") {
         // Criar novo aluno
-        // const novoAluno = await createAluno(formData)
+        await alunosService.createAluno({
+          nome: formData.nome,
+          email: formData.email,
+          telefone: formData.telefone,
+          dataNascimento: formData.dataNascimento,
+          matricula: formData.matricula,
+          planoId: formData.planoId,
+          data_inicio: new Date().toISOString().split("T")[0],
+          status: "ativo",
+          observacoes: null,
+        })
+
         toast({
           title: "Aluno criado com sucesso!",
           description: "O novo aluno foi adicionado ao sistema.",
         })
       } else {
         // Atualizar aluno existente
-        // await updateAluno(parseInt(params.id), formData)
+        await alunosService.updateAluno(Number.parseInt(params.id), formData)
+
         toast({
           title: "Aluno atualizado com sucesso!",
           description: "Os dados do aluno foram atualizados.",
@@ -133,11 +120,7 @@ export default function EditarAlunoPage({ params }: { params: { id: string } }) 
       router.push("/admin/alunos")
     } catch (error) {
       console.error("Erro ao salvar aluno:", error)
-      toast({
-        variant: "destructive",
-        title: "Erro ao salvar",
-        description: "Não foi possível salvar os dados do aluno. Tente novamente.",
-      })
+      setError("Não foi possível salvar os dados do aluno. Tente novamente.")
     } finally {
       setIsSaving(false)
     }
@@ -149,6 +132,10 @@ export default function EditarAlunoPage({ params }: { params: { id: string } }) 
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-murim-blue"></div>
       </div>
     )
+  }
+
+  if (error) {
+    return <ErrorMessage title="Erro" message={error} onRetry={() => window.location.reload()} />
   }
 
   return (

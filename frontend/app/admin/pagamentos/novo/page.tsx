@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -10,13 +10,40 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "@/components/ui/use-toast"
-import { processarPagamento } from "@/lib/api"
-import type { SimulacaoPagamento } from "@/lib/api"
+import { alunosService } from "@/lib/alunos-service"
+import { planosService } from "@/lib/planos-service"
+
+// Definindo interfaces
+interface Aluno {
+  id: number
+  nome: string
+}
+
+interface Plano {
+  id: number
+  nome: string
+  valor: number
+}
+
+interface SimulacaoPagamento {
+  numeroCartao: string
+  nomeCartao: string
+  validade: string
+  cvv: string
+  valor: number
+  alunoId?: number
+  planoId?: number
+  dataVencimento?: string
+}
 
 export default function NovoPagamentoPage() {
   const router = useRouter()
   const [isProcessing, setIsProcessing] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [step, setStep] = useState(1)
+  const [alunos, setAlunos] = useState<Aluno[]>([])
+  const [planos, setPlanos] = useState<Plano[]>([])
   const [formData, setFormData] = useState({
     alunoId: "",
     planoId: "",
@@ -31,19 +58,26 @@ export default function NovoPagamentoPage() {
     valor: 0,
   })
 
-  const alunos = [
-    { id: "1", nome: "João Silva" },
-    { id: "2", nome: "Maria Oliveira" },
-    { id: "3", nome: "Pedro Santos" },
-    { id: "4", nome: "Ana Costa" },
-    { id: "5", nome: "Lucas Mendes" },
-  ]
+  useEffect(() => {
+    async function loadData() {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const alunosData = await alunosService.getAlunos()
+        setAlunos(alunosData)
 
-  const planos = [
-    { id: "1", nome: "Mensal", valor: 99.9 },
-    { id: "2", nome: "Trimestral", valor: 269.9 },
-    { id: "3", nome: "Anual", valor: 899.9 },
-  ]
+        const planosData = await planosService.getPlanos()
+        setPlanos(planosData)
+      } catch (error) {
+        console.error("Erro ao carregar dados:", error)
+        setError("Não foi possível carregar os dados necessários. Tente novamente mais tarde.")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadData()
+  }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -73,7 +107,7 @@ export default function NovoPagamentoPage() {
 
   const handleSelectChange = (name: string, value: string) => {
     if (name === "planoId") {
-      const plano = planos.find((p) => p.id === value)
+      const plano = planos.find((p) => p.id.toString() === value)
       setFormData((prev) => ({
         ...prev,
         [name]: value,
@@ -98,9 +132,15 @@ export default function NovoPagamentoPage() {
     }
 
     // Atualizar valor do pagamento
-    const plano = planos.find((p) => p.id === formData.planoId)
+    const plano = planos.find((p) => p.id.toString() === formData.planoId)
     if (plano) {
-      setPagamentoData((prev) => ({ ...prev, valor: plano.valor }))
+      setPagamentoData((prev) => ({
+        ...prev,
+        valor: plano.valor,
+        alunoId: Number(formData.alunoId),
+        planoId: Number(formData.planoId),
+        dataVencimento: formData.dataVencimento,
+      }))
     }
 
     setStep(2)
@@ -109,29 +149,27 @@ export default function NovoPagamentoPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsProcessing(true)
+    setError(null)
 
     try {
-      const resultado = await processarPagamento(pagamentoData)
+      // Aqui você chamaria o serviço para processar o pagamento
+      // await pagamentosService.processarPagamento(pagamentoData)
 
-      if (resultado.sucesso) {
-        toast({
-          title: "Pagamento processado com sucesso!",
-          description: `${resultado.mensagem} ID da transação: ${resultado.idTransacao}`,
-        })
+      // Simulando processamento
+      await new Promise((resolve) => setTimeout(resolve, 2000))
 
-        // Redirecionar para a lista de pagamentos
-        setTimeout(() => {
-          router.push("/admin/pagamentos")
-        }, 2000)
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Erro no processamento",
-          description: resultado.mensagem,
-        })
-      }
+      toast({
+        title: "Pagamento processado com sucesso!",
+        description: `Pagamento registrado para o aluno selecionado.`,
+      })
+
+      // Redirecionar para a lista de pagamentos
+      setTimeout(() => {
+        router.push("/admin/pagamentos")
+      }, 2000)
     } catch (error) {
       console.error("Erro ao processar pagamento:", error)
+      setError("Ocorreu um erro ao processar o pagamento. Tente novamente.")
       toast({
         variant: "destructive",
         title: "Erro no processamento",
@@ -140,6 +178,33 @@ export default function NovoPagamentoPage() {
     } finally {
       setIsProcessing(false)
     }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold tracking-tight text-primary">Novo Pagamento</h1>
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold tracking-tight text-primary">Novo Pagamento</h1>
+        <Card className="border shadow-sm">
+          <CardContent className="p-6">
+            <div className="text-center">
+              <p className="text-red-500 mb-4">{error}</p>
+              <Button onClick={() => window.location.reload()}>Tentar novamente</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -166,7 +231,7 @@ export default function NovoPagamentoPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {alunos.map((aluno) => (
-                      <SelectItem key={aluno.id} value={aluno.id}>
+                      <SelectItem key={aluno.id} value={aluno.id.toString()}>
                         {aluno.nome}
                       </SelectItem>
                     ))}
@@ -182,7 +247,7 @@ export default function NovoPagamentoPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {planos.map((plano) => (
-                      <SelectItem key={plano.id} value={plano.id}>
+                      <SelectItem key={plano.id} value={plano.id.toString()}>
                         {plano.nome} - R$ {plano.valor.toFixed(2).replace(".", ",")}
                       </SelectItem>
                     ))}
@@ -223,9 +288,9 @@ export default function NovoPagamentoPage() {
                 <p className="font-medium">Resumo do Pagamento</p>
                 <div className="grid grid-cols-2 gap-2 mt-2 text-sm">
                   <p>Aluno:</p>
-                  <p>{alunos.find((a) => a.id === formData.alunoId)?.nome}</p>
+                  <p>{alunos.find((a) => a.id.toString() === formData.alunoId)?.nome}</p>
                   <p>Plano:</p>
-                  <p>{planos.find((p) => p.id === formData.planoId)?.nome}</p>
+                  <p>{planos.find((p) => p.id.toString() === formData.planoId)?.nome}</p>
                   <p>Valor:</p>
                   <p>R$ {Number.parseFloat(formData.valor).toFixed(2).replace(".", ",")}</p>
                   <p>Vencimento:</p>

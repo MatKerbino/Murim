@@ -18,8 +18,19 @@ import {
 } from "@/components/ui/pagination"
 import { Plus, MoreHorizontal, Search } from "lucide-react"
 import { ErrorMessage } from "@/components/ui/error-message"
-import { getPersonais } from "@/lib/api"
-import type { Personal, ApiError } from "@/lib/api"
+import { personaisService } from "@/lib/personais-service"
+
+// Definindo a interface Personal
+interface Personal {
+  id: number
+  nome: string
+  especialidade: string
+  email: string
+  telefone: string
+  foto: string | null
+  createdAt: string
+  updatedAt: string
+}
 
 export default function PersonaisPage() {
   const [personais, setPersonais] = useState<Personal[]>([])
@@ -37,11 +48,11 @@ export default function PersonaisPage() {
     setIsLoading(true)
     setError(null)
     try {
-      const data = await getPersonais()
+      const data = await personaisService.getPersonais()
       setPersonais(data)
     } catch (error) {
       console.error("Erro ao carregar personais:", error)
-      setError((error as ApiError).message)
+      setError("Não foi possível carregar os personais. Tente novamente mais tarde.")
     } finally {
       setIsLoading(false)
     }
@@ -50,12 +61,12 @@ export default function PersonaisPage() {
   const handleDelete = async (id: number) => {
     if (window.confirm("Tem certeza que deseja excluir este personal?")) {
       try {
-        // Simulação de exclusão
-        await new Promise((resolve) => setTimeout(resolve, 1000))
+        await personaisService.deletePersonal(id)
         setPersonais(personais.filter((personal) => personal.id !== id))
+        alert("Personal excluído com sucesso!")
       } catch (error) {
         console.error("Erro ao excluir personal:", error)
-        alert((error as ApiError).message)
+        alert("Erro ao excluir personal. Tente novamente.")
       }
     }
   }

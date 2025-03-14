@@ -66,6 +66,51 @@
   }
 }
 
+/* Melhorias para suporte ao tema escuro */
+.dark .text-primary {
+  color: hsl(var(--primary));
+}
+
+.dark .text-muted-foreground {
+  color: hsl(var(--muted-foreground));
+}
+
+.dark .text-foreground {
+  color: hsl(var(--foreground));
+}
+
+.dark .bg-background {
+  background-color: hsl(var(--background));
+}
+
+.dark .border-border {
+  border-color: hsl(var(--border));
+}
+
+/* Transição suave entre temas */
+body {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Ajustes para o calendário */
+.rdp {
+  --rdp-cell-size: 40px;
+  --rdp-accent-color: hsl(var(--primary));
+  --rdp-background-color: hsl(var(--primary) / 0.1);
+  --rdp-accent-color-dark: hsl(var(--primary));
+  --rdp-background-color-dark: hsl(var(--primary) / 0.2);
+  --rdp-outline: 2px solid var(--rdp-accent-color);
+  --rdp-outline-selected: 2px solid var(--rdp-accent-color);
+  margin: 0;
+}
+
+.dark .rdp-day_selected,
+.dark .rdp-day_selected:focus-visible,
+.dark .rdp-day_selected:hover {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
 @layer base {
   * {
     @apply border-border;

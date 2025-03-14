@@ -22,57 +22,72 @@ export interface Aula {
   updated_at: string
 }
 
+export interface Horario {
+  id: number
+  dia_semana_id: number
+  hora_inicio: string
+  hora_fim: string
+  tipo_aula?: string
+  created_at: string
+  updated_at: string
+  dia_semana?: {
+    id: number
+    nome: string
+  }
+}
+
 export const horariosService = {
-  async getHorarios(): Promise<DiaSemana[]> {
+  async getHorarios(): Promise<Horario[]> {
     try {
-      const response = await axios.get(`${API_URL}/aulas`)
-      return response.data.data || response.data
+      const response = await axios.get<{ status: string; data: Horario[] }>(`${API_URL}/horarios`)
+      return response.data.data
     } catch (error) {
-      console.error("Error fetching horarios:", error)
       throw error
     }
   },
 
   async getDiasSemana(): Promise<DiaSemana[]> {
     try {
-      const response = await axios.get(`${API_URL}/dias-semana`)
-      return response.data.data || response.data
+      const response = await axios.get<{ status: string; data: DiaSemana[] }>(`${API_URL}/dias-semana`)
+      return response.data.data
     } catch (error) {
-      console.error("Error fetching dias da semana:", error)
       throw error
     }
   },
 
-  async createAula(aula: Omit<Aula, "id" | "created_at" | "updated_at">): Promise<Aula> {
+  async createHorario(horario: Omit<Horario, "id" | "created_at" | "updated_at">): Promise<Horario> {
     try {
-      const response = await axios.post(`${API_URL}/aulas`, aula)
-      return response.data.data || response.data
+      const response = await axios.post<{ status: string; data: Horario }>(`${API_URL}/horarios`, horario)
+      return response.data.data
     } catch (error) {
-      console.error("Error creating aula:", error)
       throw error
     }
   },
 
-  async updateAula(id: number, aula: Partial<Aula>): Promise<Aula> {
+  async updateHorario(id: number, horario: Partial<Horario>): Promise<Horario> {
     try {
-      const response = await axios.post(`${API_URL}/aulas/${id}?_method=PUT`, aula)
-      return response.data.data || response.data
+      const response = await axios.put<{ status: string; data: Horario }>(`${API_URL}/horarios/${id}`, horario)
+      return response.data.data
     } catch (error) {
-      console.error(`Error updating aula with id ${id}:`, error)
       throw error
     }
   },
 
-  async deleteAula(id: number): Promise<void> {
+  async deleteHorario(id: number): Promise<void> {
     try {
-      await axios.delete(`${API_URL}/aulas/${id}`)
+      await axios.delete(`${API_URL}/horarios/${id}`)
     } catch (error) {
-      console.error(`Error deleting aula with id ${id}:`, error)
+      throw error
+    }
+  },
+
+  async getAulas(): Promise<Aula[]> {
+    try {
+      const response = await axios.get<{ status: string; data: Aula[] }>(`${API_URL}/aulas`)
+      return response.data.data
+    } catch (error) {
       throw error
     }
   },
 }
-// These files don't directly use localStorage, but they might be affected by the auth-service.
-// The issue is likely in the api-client.ts file that's used by these services.
-// No changes needed here as the issue is in the api-client.ts file.
 

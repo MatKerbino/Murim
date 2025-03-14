@@ -11,8 +11,22 @@ import { toast } from "@/components/ui/use-toast"
 import { ErrorMessage } from "@/components/ui/error-message"
 import { agendamentosService } from "@/lib/agendamentos-service"
 import { Search, CheckCircle, XCircle, Trash2 } from "lucide-react"
-import type { Agendamento } from "@/lib/agendamentos-service"
-import type { ApiError } from "@/lib/api"
+
+// Definindo a interface Agendamento
+interface Agendamento {
+  id: number
+  data: string
+  horario: string
+  status: string
+  aluno?: {
+    id: number
+    nome: string
+  }
+  personal?: {
+    id: number
+    nome: string
+  }
+}
 
 export default function AdminAgendamentosPage() {
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([])
@@ -32,7 +46,7 @@ export default function AdminAgendamentosPage() {
       setAgendamentos(data)
     } catch (error) {
       console.error("Erro ao carregar agendamentos:", error)
-      setError((error as ApiError).message || "Não foi possível carregar os agendamentos. Tente novamente mais tarde.")
+      setError("Não foi possível carregar os agendamentos. Tente novamente mais tarde.")
     } finally {
       setIsLoading(false)
     }
@@ -89,7 +103,9 @@ export default function AdminAgendamentosPage() {
   const filteredAgendamentos = agendamentos.filter(
     (agendamento) =>
       agendamento.aluno?.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      "" ||
       agendamento.personal?.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      "" ||
       agendamento.data.toLowerCase().includes(searchTerm.toLowerCase()) ||
       agendamento.horario.toLowerCase().includes(searchTerm.toLowerCase()) ||
       agendamento.status.toLowerCase().includes(searchTerm.toLowerCase()),
@@ -175,8 +191,8 @@ export default function AdminAgendamentosPage() {
                 <TableBody>
                   {filteredAgendamentos.map((agendamento) => (
                     <TableRow key={agendamento.id}>
-                      <TableCell>{agendamento.aluno?.nome}</TableCell>
-                      <TableCell>{agendamento.personal?.nome}</TableCell>
+                      <TableCell>{agendamento.aluno?.nome || "Aluno"}</TableCell>
+                      <TableCell>{agendamento.personal?.nome || "Personal"}</TableCell>
                       <TableCell>{new Date(agendamento.data).toLocaleDateString("pt-BR")}</TableCell>
                       <TableCell>{agendamento.horario}</TableCell>
                       <TableCell>{getStatusBadge(agendamento.status)}</TableCell>

@@ -12,8 +12,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/components/ui/use-toast"
 import { ImageUpload } from "@/components/ui/image-upload"
 import { ErrorMessage } from "@/components/ui/error-message"
-import { getPersonal } from "@/lib/api"
-import type { Personal, ApiError } from "@/lib/api"
+import { personaisService } from "@/lib/personais-service"
+
+// Definindo a interface Personal
+interface Personal {
+  id: number
+  nome: string
+  especialidade: string
+  email: string
+  telefone: string
+  foto: string | null
+  createdAt: string
+  updatedAt: string
+}
 
 export default function EditarPersonalPage({ params }: { params: { id: string } }) {
   const router = useRouter()
@@ -51,11 +62,11 @@ export default function EditarPersonalPage({ params }: { params: { id: string } 
       setIsLoading(true)
       setError(null)
       try {
-        const personalData = await getPersonal(Number.parseInt(params.id))
+        const personalData = await personaisService.getPersonal(Number.parseInt(params.id))
         setFormData(personalData)
       } catch (error) {
         console.error("Erro ao carregar personal:", error)
-        setError((error as ApiError).message)
+        setError("Não foi possível carregar os dados do personal. Tente novamente mais tarde.")
       } finally {
         setIsLoading(false)
       }
@@ -80,18 +91,17 @@ export default function EditarPersonalPage({ params }: { params: { id: string } 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSaving(true)
+    setError(null)
 
     try {
       if (params.id === "novo") {
-        // Simulação de criação
-        await new Promise((resolve) => setTimeout(resolve, 1500))
+        await personaisService.createPersonal(formData as Personal)
         toast({
           title: "Personal criado com sucesso!",
           description: "O novo personal trainer foi adicionado ao sistema.",
         })
       } else {
-        // Simulação de atualização
-        await new Promise((resolve) => setTimeout(resolve, 1500))
+        await personaisService.updatePersonal(Number.parseInt(params.id), formData as Personal)
         toast({
           title: "Personal atualizado com sucesso!",
           description: "Os dados do personal trainer foram atualizados.",
@@ -102,45 +112,15 @@ export default function EditarPersonalPage({ params }: { params: { id: string } 
       router.push("/admin/personais")
     } catch (error) {
       console.error("Erro ao salvar personal:", error)
+      setError("Não foi possível salvar os dados do personal. Tente novamente.")
       toast({
         variant: "destructive",
         title: "Erro ao salvar",
-        description: (error as ApiError).message || "Não foi possível salvar os dados do personal. Tente novamente.",
+        description: "Não foi possível salvar os dados do personal. Tente novamente.",
       })
     } finally {
       setIsSaving(false)
     }
-  }
-
-  const handleRetry = () => {
-    if (params.id === "novo") {
-      setError(null)
-      return
-    }
-
-    setError(null)
-    setIsLoading(true)
-    getPersonal(Number.parseInt(params.id))
-      .then((data) => {
-        setFormData(data)
-        setIsLoading(false)
-      })
-      .catch((error) => {
-        console.error("Erro ao carregar personal:", error)
-        setError((error as ApiError).message)
-        setIsLoading(false)
-      })
-  }
-
-  if (error) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold tracking-tight text-primary">
-          {params.id === "novo" ? "Novo Personal" : "Editar Personal"}
-        </h1>
-        <ErrorMessage title="Erro ao carregar personal" message={error} onRetry={handleRetry} />
-      </div>
-    )
   }
 
   if (isLoading) {
@@ -152,6 +132,17 @@ export default function EditarPersonalPage({ params }: { params: { id: string } 
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold tracking-tight text-primary">
+          {params.id === "novo" ? "Novo Personal" : "Editar Personal"}
+        </h1>
+        <ErrorMessage title="Erro ao carregar personal" message={error} onRetry={() => window.location.reload()} />
       </div>
     )
   }

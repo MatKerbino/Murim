@@ -30,6 +30,7 @@ class AuthController extends Controller
         }
 
         if (!Auth::attempt($request->only('email', 'password'))) {
+            \Log::warning('Failed login attempt for email: ' . $request->email);
             return response()->json([
                 'status' => 'error',
                 'message' => 'Credenciais inválidas'
@@ -38,6 +39,7 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->firstOrFail();
         $token = $user->createToken('auth_token')->plainTextToken;
+        \Log::info('Token gerado:', ['token' => $token]);
 
         return response()->json([
             'status' => 'success',
@@ -90,6 +92,7 @@ class AuthController extends Controller
         ]);
 
         $token = $user->createToken('auth_token')->plainTextToken;
+        \Log::info('Token gerado:', ['token' => $token]);
 
         return response()->json([
             'status' => 'success',
