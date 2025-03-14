@@ -35,6 +35,7 @@ class PerfilController extends Controller
             'email' => 'sometimes|required|email|max:255|unique:users,email,' . $user->id,
             'current_password' => 'required_with:password|string',
             'password' => 'sometimes|required|string|min:8|confirmed',
+            'foto' => 'nullable|image|max:2048',
         ]);
         
         if ($validator->fails()) {
@@ -66,6 +67,16 @@ class PerfilController extends Controller
         
         if ($request->has('email')) {
             $user->email = $request->email;
+        }
+        
+        // Processar upload de foto
+        if ($request->hasFile('foto')) {
+            $file = $request->file('foto');
+            $filename = 'user_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('images/usuarios'), $filename);
+            $user->foto = '/images/usuarios/' . $filename;
+        } else if ($request->has('foto') && is_string($request->foto)) {
+            $user->foto = $request->foto;
         }
         
         $user->save();

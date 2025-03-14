@@ -1,9 +1,10 @@
-import axios from "axios"
-import { API_URL } from "./utils"
+import { createApiClient } from "./axios"
+import axios, { isAxiosError } from "axios"
 
 export interface CategoriaDica {
   id: number
   nome: string
+  slug: string
   created_at: string
   updated_at: string
 }
@@ -11,39 +12,23 @@ export interface CategoriaDica {
 export interface Dica {
   id: number
   titulo: string
+  slug: string
   conteudo: string
   imagem: string | null
   categoria_id: number
-  user_id: number
-  created_at: string
-  updated_at: string
   categoria?: CategoriaDica
-  user?: {
+  autor_id: number
+  autor?: {
     id: number
     name: string
   }
-  comentarios_count?: number
-  curtidas_count?: number
+  publicado: boolean
+  destaque: boolean
+  created_at: string
+  updated_at: string
 }
 
-// Configuração do cliente axios com interceptor para token
-const api = axios.create({
-  baseURL: API_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
-})
-
-// Adiciona o token em todas as requisições
-api.interceptors.request.use((config) => {
-  if (typeof window !== "undefined") {
-    const token = localStorage.getItem("token")
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
-  }
-  return config
-})
+const api = createApiClient()
 
 export const dicasAdminService = {
   async getDicas(): Promise<Dica[]> {
@@ -51,7 +36,11 @@ export const dicasAdminService = {
       const response = await api.get("/dicas")
       return response.data.data || []
     } catch (error) {
-      console.error("Erro ao buscar dicas:", error)
+      if (isAxiosError(error)) {
+        console.error("Erro ao buscar dicas:", error.response?.data || error.message)
+      } else {
+        console.error("Erro inesperado:", error)
+      }
       throw error
     }
   },
@@ -61,24 +50,14 @@ export const dicasAdminService = {
       const response = await api.get(`/dicas/${id}`)
       return response.data.data
     } catch (error) {
-      console.error(`Erro ao buscar dica ${id}:`, error)
-      throw error
-    }
-  },
-
-  async getCategorias(): Promise<CategoriaDica[]> {
-    try {
-      const response = await api.get("/categorias-dicas")
-      return response.data.data || []
-    } catch (error) {
-      console.error("Erro ao buscar categorias de dicas:", error)
+      console.error("Erro ao buscar dica:", error)
       throw error
     }
   },
 
   async createDica(dica: FormData): Promise<Dica> {
     try {
-      const response = await api.post("/dicas", dica, {
+      const response = await api.post<Dica>("/dicas", dica, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -92,7 +71,7 @@ export const dicasAdminService = {
 
   async updateDica(id: number, dica: FormData): Promise<Dica> {
     try {
-      const response = await api.post(`/dicas/${id}`, dica, {
+      const response = await api.post<Dica>(`/dicas/${id}?_method=PUT`, dica, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -113,9 +92,29 @@ export const dicasAdminService = {
     }
   },
 
+  async getCategorias(): Promise<CategoriaDica[]> {
+    try {
+      const response = await api.get("/categorias-dicas")
+      return response.data.data
+    } catch (error) {
+      console.error("Erro ao buscar categorias:", error)
+      throw error
+    }
+  },
+
+  async getCategoria(id: number): Promise<CategoriaDica> {
+    try {
+      const response = await api.get(`/categorias-dicas/${id}`)
+      return response.data.data
+    } catch (error) {
+      console.error("Erro ao buscar categoria:", error)
+      throw error
+    }
+  },
+
   async createCategoria(categoria: { nome: string }): Promise<CategoriaDica> {
     try {
-      const response = await api.post("/categorias-dicas", categoria)
+      const response = await api.post<CategoriaDica>("/categorias-dicas", categoria)
       return response.data.data
     } catch (error) {
       console.error("Erro ao criar categoria:", error)
@@ -125,7 +124,7 @@ export const dicasAdminService = {
 
   async updateCategoria(id: number, categoria: { nome: string }): Promise<CategoriaDica> {
     try {
-      const response = await api.put(`/categorias-dicas/${id}`, categoria)
+      const response = await api.put<CategoriaDica>(`/categorias-dicas/${id}`, categoria)
       return response.data.data
     } catch (error) {
       console.error("Erro ao atualizar categoria:", error)

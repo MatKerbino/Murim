@@ -19,6 +19,9 @@ use App\Http\Controllers\API\CurtidaController;
 use App\Http\Controllers\API\PerfilController;
 use App\Http\Controllers\API\DashboardController;
 use App\Http\Controllers\API\HorarioController;
+use App\Http\Controllers\API\CarrinhoController;
+use App\Http\Controllers\API\AssinaturaController;
+use App\Http\Controllers\API\UsuarioController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -72,6 +75,12 @@ Route::middleware('auth:api')->group(function () {
   Route::post('/agendamentos', [AgendamentoController::class, 'store']);
   Route::get('/meus-agendamentos', [AgendamentoController::class, 'meusAgendamentos']);
   Route::get('/meus-pagamentos', [PagamentoController::class, 'meusPagamentos']);
+
+  // Assinaturas de planos
+  Route::get('/minhas-assinaturas', [AssinaturaController::class, 'minhasAssinaturas']);
+  Route::get('/minhas-assinaturas/ativas', [AssinaturaController::class, 'minhasAssinaturasAtivas']);
+  Route::post('/planos/{id}/assinar', [AssinaturaController::class, 'assinar']);
+  Route::post('/assinaturas/{id}/cancelar', [AssinaturaController::class, 'cancelar']);
   
   // Comentários e curtidas
   Route::post('/dicas/{dicaId}/comentarios', [ComentarioController::class, 'store']);
@@ -82,6 +91,13 @@ Route::middleware('auth:api')->group(function () {
   // Rotas para vendas
   Route::post('/vendas', [VendaController::class, 'store']);
   Route::get('/minhas-compras', [VendaController::class, 'minhasCompras']);
+
+  // Carrinho de compras
+  Route::get('/carrinho', [CarrinhoController::class, 'index']);
+  Route::post('/carrinho', [CarrinhoController::class, 'store']);
+  Route::put('/carrinho/{id}', [CarrinhoController::class, 'update']);
+  Route::delete('/carrinho/{id}', [CarrinhoController::class, 'destroy']);
+  Route::delete('/carrinho', [CarrinhoController::class, 'clear']);
   
   // Rotas para administradores
   Route::middleware('admin')->group(function () {
@@ -130,6 +146,16 @@ Route::middleware('auth:api')->group(function () {
       // Gerenciamento de Contatos
       Route::apiResource('contatos', ContatoController::class)->except(['store']);
       Route::post('/contatos/{id}/responder', [ContatoController::class, 'responder']);
+
+      // Assinaturas
+      Route::apiResource('assinaturas', AssinaturaController::class)->except(['store', 'destroy']);
+
+      // Gerenciamento de Usuários
+      Route::get('/admin/usuarios', [UsuarioController::class, 'index']);
+      Route::get('/admin/usuarios/online', [UsuarioController::class, 'online']);
+      Route::get('/admin/usuarios/{id}', [UsuarioController::class, 'show']);
+      Route::put('/admin/usuarios/{id}', [UsuarioController::class, 'update']);
+      Route::put('/admin/usuarios/{id}/admin', [UsuarioController::class, 'toggleAdmin']);
   });
 });
 

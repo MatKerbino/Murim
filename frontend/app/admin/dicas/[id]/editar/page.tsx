@@ -1,7 +1,5 @@
 "use client"
 
-import type React from "react"
-
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,8 +14,10 @@ import { ErrorMessage } from "@/components/ui/error-message"
 import { dicasAdminService, type Dica, type CategoriaDica } from "@/lib/dicas-admin-service"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import React from "react"
 
 export default function EditarDicaPage({ params }: { params: { id: string } }) {
+  const id = React.use(params).id
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -36,10 +36,10 @@ export default function EditarDicaPage({ params }: { params: { id: string } }) {
       setError(null)
       try {
         const categoriasData = await dicasAdminService.getCategorias()
-        setCategorias(categoriasData)
+        setCategorias(categoriasData || [])
 
-        if (params.id !== "nova") {
-          const dicaData = await dicasAdminService.getDica(Number.parseInt(params.id))
+        if (id !== "nova") {
+          const dicaData = await dicasAdminService.getDica(Number.parseInt(id))
           setFormData(dicaData)
         }
       } catch (error) {
@@ -51,7 +51,7 @@ export default function EditarDicaPage({ params }: { params: { id: string } }) {
     }
 
     loadData()
-  }, [params.id])
+  }, [id])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -110,14 +110,14 @@ export default function EditarDicaPage({ params }: { params: { id: string } }) {
         formDataToSend.append("imagem", formData.imagem)
       }
 
-      if (params.id === "nova") {
+      if (id === "nova") {
         await dicasAdminService.createDica(formDataToSend)
         toast({
           title: "Dica criada com sucesso!",
           description: "A nova dica foi adicionada ao sistema.",
         })
       } else {
-        await dicasAdminService.updateDica(Number.parseInt(params.id), formDataToSend)
+        await dicasAdminService.updateDica(Number.parseInt(id), formDataToSend)
         toast({
           title: "Dica atualizada com sucesso!",
           description: "Os dados da dica foram atualizados.",
@@ -149,7 +149,7 @@ export default function EditarDicaPage({ params }: { params: { id: string } }) {
             </Button>
           </Link>
           <h1 className="text-3xl font-bold tracking-tight text-primary">
-            {params.id === "nova" ? "Nova Dica" : "Editar Dica"}
+            {id === "nova" ? "Nova Dica" : "Editar Dica"}
           </h1>
         </div>
         <div className="flex justify-center items-center h-64">
@@ -169,7 +169,7 @@ export default function EditarDicaPage({ params }: { params: { id: string } }) {
             </Button>
           </Link>
           <h1 className="text-3xl font-bold tracking-tight text-primary">
-            {params.id === "nova" ? "Nova Dica" : "Editar Dica"}
+            {id === "nova" ? "Nova Dica" : "Editar Dica"}
           </h1>
         </div>
         <ErrorMessage title="Erro ao carregar dados" message={error} onRetry={() => window.location.reload()} />
@@ -186,15 +186,15 @@ export default function EditarDicaPage({ params }: { params: { id: string } }) {
           </Button>
         </Link>
         <h1 className="text-3xl font-bold tracking-tight text-primary">
-          {params.id === "nova" ? "Nova Dica" : "Editar Dica"}
+          {id === "nova" ? "Nova Dica" : "Editar Dica"}
         </h1>
       </div>
 
       <Card className="border shadow-sm">
         <CardHeader>
-          <CardTitle>{params.id === "nova" ? "Adicionar Dica" : "Editar Dica"}</CardTitle>
+          <CardTitle>{id === "nova" ? "Adicionar Dica" : "Editar Dica"}</CardTitle>
           <CardDescription>
-            {params.id === "nova"
+            {id === "nova"
               ? "Preencha os dados para cadastrar uma nova dica."
               : "Atualize os dados da dica conforme necessário."}
           </CardDescription>

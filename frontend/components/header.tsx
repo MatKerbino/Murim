@@ -17,6 +17,7 @@ import {
 import { useAuth } from "@/contexts/auth-context"
 import { Badge } from "@/components/ui/badge"
 import { carrinhoService } from "@/lib/carrinho-service"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 const routes = [
   {
@@ -77,6 +78,14 @@ export default function Header() {
     }
   }, [isAuthenticated])
 
+  // Função para obter as iniciais do nome do usuário
+  const getUserInitials = (name: string) => {
+    if (!name) return "U"
+    const nameParts = name.split(" ")
+    if (nameParts.length === 1) return nameParts[0].charAt(0).toUpperCase()
+    return (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase()
+  }
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
@@ -104,6 +113,11 @@ export default function Header() {
         <div className="flex items-center gap-2">
           {isAuthenticated ? (
             <>
+              {/* Saudação ao usuário */}
+              <div className="hidden md:flex items-center mr-2">
+                <span className="text-sm text-muted-foreground">Olá, {user?.name?.split(" ")[0]}</span>
+              </div>
+
               {cartItemCount > 0 && (
                 <Link href="/carrinho">
                   <Button variant="outline" size="icon" className="relative">
@@ -117,9 +131,10 @@ export default function Header() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
-                      <UserCircle className="h-5 w-5 text-primary" />
-                    </div>
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user?.foto || ""} alt={user?.name || "Usuário"} />
+                      <AvatarFallback>{getUserInitials(user?.name || "")}</AvatarFallback>
+                    </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end" forceMount>
@@ -218,9 +233,10 @@ export default function Header() {
                         </Link>
                       )}
                       <div className="flex items-center gap-2 border rounded-full px-2 py-1">
-                        <div className="relative w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                          <UserCircle className="h-6 w-6 text-primary" />
-                        </div>
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={user?.foto || ""} alt={user?.name || "Usuário"} />
+                          <AvatarFallback>{getUserInitials(user?.name || "")}</AvatarFallback>
+                        </Avatar>
                         <span className="text-sm text-muted-foreground">{user?.name}</span>
                       </div>
                       <Link href="/perfil" onClick={() => setIsOpen(false)} className="w-full block">

@@ -9,9 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "@/components/ui/use-toast"
 import { ErrorMessage } from "@/components/ui/error-message"
-import { horariosService } from "@/lib/horarios-service"
+import { horariosAdminService } from "@/lib/horarios-admin-service"
 import { Search, Trash2 } from "lucide-react"
-import type { Horario, DiaSemana } from "@/lib/horarios-service"
+import type { Horario, DiaSemana } from "@/lib/horarios-admin-service"
 
 export default function AdminHorariosPage() {
   const [horarios, setHorarios] = useState<Horario[]>([])
@@ -52,8 +52,8 @@ export default function AdminHorariosPage() {
     setError(null)
     try {
       const [horariosData, diasSemanaData] = await Promise.all([
-        horariosService.getHorarios(),
-        horariosService.getDiasSemana(),
+        horariosAdminService.getHorarios(),
+        horariosAdminService.getDiasSemana(),
       ])
       setHorarios(horariosData)
       setDiasSemana(diasSemanaData)
@@ -77,7 +77,7 @@ export default function AdminHorariosPage() {
 
     setIsAdding(true)
     try {
-      const horarioAdicionado = await horariosService.createHorario({
+      const horarioAdicionado = await horariosAdminService.createHorario({
         dia_semana_id: Number.parseInt(novoHorario.dia_semana_id),
         hora_inicio: novoHorario.hora_inicio,
         hora_fim: novoHorario.hora_fim,
@@ -120,7 +120,7 @@ export default function AdminHorariosPage() {
     }
 
     try {
-      await horariosService.deleteHorario(id)
+      await horariosAdminService.deleteHorario(id)
       setHorarios(horarios.filter((h) => h.id !== id))
       toast({
         title: "Sucesso",

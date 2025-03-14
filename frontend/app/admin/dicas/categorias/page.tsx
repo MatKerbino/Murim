@@ -40,7 +40,7 @@ export default function AdminCategoriasDicasPage() {
     setError(null)
     try {
       const data = await dicasAdminService.getCategorias()
-      setCategorias(data)
+      setCategorias(data || [])
     } catch (error) {
       console.error("Erro ao carregar categorias:", error)
       setError("Não foi possível carregar as categorias. Tente novamente mais tarde.")
@@ -109,7 +109,7 @@ export default function AdminCategoriasDicasPage() {
   }
 
   // Filtrar categorias com base no termo de pesquisa
-  const filteredCategorias = categorias.filter((categoria) =>
+  const filteredCategorias = (categorias || []).filter((categoria) =>
     categoria.nome.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 

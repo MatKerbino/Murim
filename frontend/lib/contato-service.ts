@@ -1,5 +1,6 @@
-import axios from "axios"
-import { API_URL } from "./utils"
+import { createApiClient } from "./axios"
+
+const api = createApiClient()
 
 export interface Contato {
   id: number
@@ -36,7 +37,7 @@ const getAxiosConfig = () => {
 export const contatoService = {
   async enviarContato(contato: ContatoForm): Promise<Contato> {
     try {
-      const response = await axios.post(`${API_URL}/contatos`, contato)
+      const response = await api.post("/contatos", contato)
       return response.data.data
     } catch (error) {
       console.error("Erro ao enviar contato:", error)
@@ -46,7 +47,7 @@ export const contatoService = {
 
   async getContatos(): Promise<Contato[]> {
     try {
-      const response = await axios.get(`${API_URL}/contatos`, getAxiosConfig())
+      const response = await api.get("/contatos", getAxiosConfig())
       return response.data.data || []
     } catch (error) {
       console.error("Erro ao buscar contatos:", error)
@@ -56,7 +57,7 @@ export const contatoService = {
 
   async getContato(id: number): Promise<Contato> {
     try {
-      const response = await axios.get(`${API_URL}/contatos/${id}`, getAxiosConfig())
+      const response = await api.get(`/contatos/${id}`, getAxiosConfig())
       return response.data.data
     } catch (error) {
       console.error("Erro ao buscar contato:", error)
@@ -66,7 +67,7 @@ export const contatoService = {
 
   async responderContato(id: number, resposta: string): Promise<Contato> {
     try {
-      const response = await axios.post(`${API_URL}/contatos/${id}/responder`, { resposta }, getAxiosConfig())
+      const response = await api.post(`/contatos/${id}/responder`, { resposta }, getAxiosConfig())
       return response.data.data
     } catch (error) {
       console.error("Erro ao responder contato:", error)
@@ -76,7 +77,7 @@ export const contatoService = {
 
   async deleteContato(id: number): Promise<void> {
     try {
-      await axios.delete(`${API_URL}/contatos/${id}`, getAxiosConfig())
+      await api.delete(`/contatos/${id}`, getAxiosConfig())
     } catch (error) {
       console.error("Erro ao excluir contato:", error)
       throw error

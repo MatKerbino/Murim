@@ -1,5 +1,4 @@
-import axios from "axios"
-import { API_URL } from "./utils"
+import { createApiClient } from "./axios"
 
 export interface Plano {
   id: number
@@ -13,29 +12,12 @@ export interface Plano {
   updated_at: string
 }
 
-// Configuração do cliente axios com interceptor para token
-const api = axios.create({
-  baseURL: API_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
-})
-
-// Adiciona o token em todas as requisições
-api.interceptors.request.use((config) => {
-  if (typeof window !== "undefined") {
-    const token = localStorage.getItem("token")
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
-  }
-  return config
-})
+const api = createApiClient()
 
 export const planosService = {
   async getPlanos(): Promise<Plano[]> {
     try {
-      const response = await axios.get(`${API_URL}/planos`)
+      const response = await api.get("/planos")
       return response.data.data || []
     } catch (error) {
       console.error("Erro ao buscar planos:", error)
@@ -45,7 +27,7 @@ export const planosService = {
 
   async getPlano(id: number): Promise<Plano> {
     try {
-      const response = await axios.get(`${API_URL}/planos/${id}`)
+      const response = await api.get(`/planos/${id}`)
       return response.data.data
     } catch (error) {
       console.error(`Erro ao buscar plano ${id}:`, error)

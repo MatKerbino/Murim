@@ -1,5 +1,5 @@
-import axios from "axios"
-import { API_URL } from "./utils"
+import { createApiClient } from "./axios"
+import axios, { isAxiosError } from "axios"
 
 export interface Aluno {
   id: number
@@ -22,24 +22,15 @@ export interface Aluno {
   }
 }
 
-const getAxiosConfig = () => {
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
-  console.log("Token retrieved:", token); // Debugging line to check token retrieval
-  return {
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-  }
-}
+const api = createApiClient()
 
 export const alunosService = {
   async getAlunos(): Promise<Aluno[]> {
     try {
-      const response = await axios.get(`${API_URL}/alunos`, getAxiosConfig())
+      const response = await api.get("/alunos")
       return response.data.data || response.data
     } catch (error) {
-      if (axios.isAxiosError(error)) {
+      if (isAxiosError(error)) {
         console.error("Error fetching alunos:", error.response?.data || error.message)
       } else {
         console.error("Unexpected error:", error)
@@ -50,7 +41,7 @@ export const alunosService = {
 
   async getAluno(id: number): Promise<Aluno> {
     try {
-      const response = await axios.get(`${API_URL}/alunos/${id}`, getAxiosConfig())
+      const response = await api.get(`/alunos/${id}`)
       return response.data.data
     } catch (error) {
       console.error("Erro ao buscar aluno:", error)
@@ -58,9 +49,9 @@ export const alunosService = {
     }
   },
 
-  async createAluno(aluno: Omit<Aluno, "id" | "createdAt" | "updatedAt" | "plano">): Promise<Aluno> {
+  async createAluno(aluno: Omit<Aluno, "id" | "created_at" | "updated_at" | "plano">): Promise<Aluno> {
     try {
-      const response = await axios.post(`${API_URL}/alunos`, aluno, getAxiosConfig())
+      const response = await api.post("/alunos", aluno)
       return response.data.data
     } catch (error) {
       console.error("Erro ao criar aluno:", error)
@@ -70,7 +61,7 @@ export const alunosService = {
 
   async updateAluno(id: number, aluno: Partial<Aluno>): Promise<Aluno> {
     try {
-      const response = await axios.put(`${API_URL}/alunos/${id}`, aluno, getAxiosConfig())
+      const response = await api.put(`/alunos/${id}`, aluno)
       return response.data.data
     } catch (error) {
       console.error("Erro ao atualizar aluno:", error)
@@ -80,7 +71,7 @@ export const alunosService = {
 
   async deleteAluno(id: number): Promise<void> {
     try {
-      await axios.delete(`${API_URL}/alunos/${id}`, getAxiosConfig())
+      await api.delete(`/alunos/${id}`)
     } catch (error) {
       console.error("Erro ao excluir aluno:", error)
       throw error

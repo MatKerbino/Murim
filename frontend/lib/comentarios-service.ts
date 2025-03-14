@@ -1,5 +1,7 @@
+import { createApiClient } from "./axios"
 import axios from "axios"
-import { API_URL } from "./utils"
+
+const api = createApiClient()
 
 export interface Comentario {
   id: number
@@ -22,9 +24,7 @@ export interface Comentario {
 export const comentariosService = {
   async getComentarios(dicaId: number): Promise<Comentario[]> {
     try {
-      const url = `${API_URL}/dicas/${dicaId}/comentarios`;
-      console.log("URL chamada:", url);
-      const response = await axios.get<{ status: string; data: Comentario[] }>(url);
+      const response = await api.get<{ status: string; data: Comentario[] }>(`/dicas/${dicaId}/comentarios`);
       return response.data.data;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 404) {
@@ -38,7 +38,7 @@ export const comentariosService = {
 
   async criarComentario(dicaId: number, conteudo: string): Promise<Comentario> {
     try {
-      const response = await axios.post<{ status: string; data: Comentario }>(`${API_URL}/dicas/${dicaId}/comentarios`, {
+      const response = await api.post<{ status: string; data: Comentario }>(`/dicas/${dicaId}/comentarios`, {
         conteudo,
       })
       return response.data.data
@@ -49,7 +49,7 @@ export const comentariosService = {
 
   async excluirComentario(id: number): Promise<void> {
     try {
-      await axios.delete(`${API_URL}/comentarios/${id}`)
+      await api.delete(`/comentarios/${id}`)
     } catch (error) {
       throw error
     }
@@ -57,7 +57,7 @@ export const comentariosService = {
 
   async listarTodosComentarios(): Promise<Comentario[]> {
     try {
-      const response = await axios.get<{ status: string; data: Comentario[] }>(`${API_URL}/admin/comentarios`)
+      const response = await api.get<{ status: string; data: Comentario[] }>(`/admin/comentarios`)
       return response.data.data
     } catch (error) {
       throw error
@@ -66,7 +66,7 @@ export const comentariosService = {
 
   async aprovarComentario(id: number, aprovado: boolean): Promise<Comentario> {
     try {
-      const response = await axios.post<{ status: string; data: Comentario }>(`${API_URL}/comentarios/${id}/aprovar`, {
+      const response = await api.post<{ status: string; data: Comentario }>(`/comentarios/${id}/aprovar`, {
         aprovado,
       })
       return response.data.data

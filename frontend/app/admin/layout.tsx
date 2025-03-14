@@ -51,6 +51,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       title: "Planos",
     },
     {
+      href: "/admin/assinaturas",
+      title: "Assinaturas",
+    },
+    {
       href: "/admin/pagamentos",
       title: "Pagamentos",
     },

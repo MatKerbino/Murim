@@ -12,6 +12,7 @@ import { usuariosService } from "@/lib/usuarios-service"
 import { Search, Eye, UserCheck, UserX } from "lucide-react"
 import Link from "next/link"
 import type { Usuario } from "@/lib/usuarios-service"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 export default function AdminUsuariosPage() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
@@ -43,6 +44,14 @@ export default function AdminUsuariosPage() {
       usuario.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       usuario.email.toLowerCase().includes(searchTerm.toLowerCase()),
   )
+
+  // Função para obter as iniciais do nome do usuário
+  const getUserInitials = (name: string) => {
+    if (!name) return "U"
+    const nameParts = name.split(" ")
+    if (nameParts.length === 1) return nameParts[0].charAt(0).toUpperCase()
+    return (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase()
+  }
 
   return (
     <div className="space-y-6">
@@ -90,7 +99,7 @@ export default function AdminUsuariosPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nome</TableHead>
+                    <TableHead>Usuário</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Tipo</TableHead>
@@ -101,7 +110,15 @@ export default function AdminUsuariosPage() {
                 <TableBody>
                   {filteredUsuarios.map((usuario) => (
                     <TableRow key={usuario.id}>
-                      <TableCell className="font-medium">{usuario.name}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={usuario.foto || ""} alt={usuario.name} />
+                            <AvatarFallback>{getUserInitials(usuario.name)}</AvatarFallback>
+                          </Avatar>
+                          <span className="font-medium">{usuario.name}</span>
+                        </div>
+                      </TableCell>
                       <TableCell>{usuario.email}</TableCell>
                       <TableCell>
                         {usuario.is_online ? (

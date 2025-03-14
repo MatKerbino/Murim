@@ -6,12 +6,16 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 
-interface ProtectedRouteProps {
+// Corrigir a exportação do componente para ser compatível com a importação no layout
+export function ProtectedRoute({
+  children,
+  adminOnly = false,
+  requiredRole,
+}: {
   children: React.ReactNode
   adminOnly?: boolean
-}
-
-export default function ProtectedRoute({ children, adminOnly = false }: ProtectedRouteProps) {
+  requiredRole?: string
+}) {
   const router = useRouter()
   const { isAuthenticated, isAdmin, isLoading } = useAuth()
   const [mounted, setMounted] = useState(false)
@@ -26,11 +30,11 @@ export default function ProtectedRoute({ children, adminOnly = false }: Protecte
     if (mounted && !isLoading) {
       if (!isAuthenticated) {
         router.push("/login")
-      } else if (adminOnly && !isAdmin) {
+      } else if ((adminOnly || requiredRole === "admin") && !isAdmin) {
         router.push("/")
       }
     }
-  }, [mounted, isAuthenticated, isAdmin, isLoading, router, adminOnly])
+  }, [mounted, isAuthenticated, isAdmin, isLoading, router, adminOnly, requiredRole])
 
   // Não renderizar nada no servidor ou durante o carregamento
   if (!mounted || isLoading) {
@@ -42,11 +46,14 @@ export default function ProtectedRoute({ children, adminOnly = false }: Protecte
   }
 
   // Não renderizar nada se não estiver autenticado ou não for admin (quando necessário)
-  if (!isAuthenticated || (adminOnly && !isAdmin)) {
+  if (!isAuthenticated || ((adminOnly || requiredRole === "admin") && !isAdmin)) {
     return null
   }
 
   // Renderizar o conteúdo protegido
   return <>{children}</>
 }
+
+// Manter o export default para compatibilidade com código existente
+export default ProtectedRoute
 

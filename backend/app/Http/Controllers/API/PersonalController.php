@@ -8,104 +8,73 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 
-class PersonalController extends Controller 
+class PersonalController extends Controller
 {
+    /**
+     * Display a listing of the resource.
+     */
     public function index()
     {
-        try {
-            // For testing purposes, let's create a mock response
-            $personais = [
-                [
-                    'id' => 1,
-                    'nome' => 'João Silva',
-                    'especialidade' => 'Musculação',
-                    'email' => 'joao@example.com',
-                    'telefone' => '(11) 99999-1111',
-                    'foto' => null,
-                    'biografia' => 'Especialista em musculação com 10 anos de experiência.',
-                    'ativo' => true,
-                    'created_at' => '2024-01-01T10:00:00.000000Z',
-                    'updated_at' => '2024-01-01T10:00:00.000000Z'
-                ],
-                [
-                    'id' => 2,
-                    'nome' => 'Maria Souza',
-                    'especialidade' => 'Pilates',
-                    'email' => 'maria@example.com',
-                    'telefone' => '(11) 99999-2222',
-                    'foto' => null,
-                    'biografia' => 'Instrutora de pilates certificada com formação internacional.',
-                    'ativo' => true,
-                    'created_at' => '2024-01-02T10:00:00.000000Z',
-                    'updated_at' => '2024-01-02T10:00:00.000000Z'
-                ]
-            ];
-
-            // Log the response for debugging
-            \Log::info('Returning personais data:', ['data' => $personais]);
-            
-            return response()->json([
-                'status' => 'success',
-                'data' => $personais
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('Error in PersonalController@index: ' . $e->getMessage());
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Erro ao buscar personais: ' . $e->getMessage()
-            ], 500);
-        }
+        $personais = Personal::all(); // Obtém todos os registros de personal
+        return response()->json($personais);
     }
 
-    public function show(string $id)
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
     {
-        try {
-            // Mock data for testing
-            $personais = [
-                1 => [
-                    'id' => 1,
-                    'nome' => 'João Silva',
-                    'especialidade' => 'Musculação',
-                    'email' => 'joao@example.com',
-                    'telefone' => '(11) 99999-1111',
-                    'foto' => null,
-                    'biografia' => 'Especialista em musculação com 10 anos de experiência.',
-                    'ativo' => true,
-                    'created_at' => '2024-01-01T10:00:00.000000Z',
-                    'updated_at' => '2024-01-01T10:00:00.000000Z'
-                ],
-                2 => [
-                    'id' => 2,
-                    'nome' => 'Maria Souza',
-                    'especialidade' => 'Pilates',
-                    'email' => 'maria@example.com',
-                    'telefone' => '(11) 99999-2222',
-                    'foto' => null,
-                    'biografia' => 'Instrutora de pilates certificada com formação internacional.',
-                    'ativo' => true,
-                    'created_at' => '2024-01-02T10:00:00.000000Z',
-                    'updated_at' => '2024-01-02T10:00:00.000000Z'
-                ]
-            ];
+        $request->validate([
+            'nome' => 'required|string|max:255',
+            'especialidade' => 'required|string|max:255',
+            'email' => 'required|email|unique:personais,email',
+            'telefone' => 'nullable|string|max:20',
+            'foto' => 'nullable|string',
+            'biografia' => 'nullable|string',
+            'ativo' => 'required|boolean',
+        ]);
 
-            if (!isset($personais[$id])) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Personal não encontrado'
-                ], 404);
-            }
+        $personal = Personal::create($request->all());
+        return response()->json($personal, 201);
+    }
 
-            return response()->json([
-                'status' => 'success',
-                'data' => $personais[$id]
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('Error in PersonalController@show: ' . $e->getMessage());
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Erro ao buscar personal: ' . $e->getMessage()
-            ], 500);
-        }
+    /**
+     * Display the specified resource.
+     */
+    public function show($id)
+    {
+        $personal = Personal::findOrFail($id);
+        return response()->json($personal);
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'nome' => 'sometimes|required|string|max:255',
+            'especialidade' => 'sometimes|required|string|max:255',
+            'email' => 'sometimes|required|email|unique:personais,email,' . $id,
+            'telefone' => 'nullable|string|max:20',
+            'foto' => 'nullable|string',
+            'biografia' => 'nullable|string',
+            'ativo' => 'sometimes|required|boolean',
+        ]);
+
+        $personal = Personal::findOrFail($id);
+        $personal->update($request->all());
+        return response()->json($personal);
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy($id)
+    {
+        $personal = Personal::findOrFail($id);
+        $personal->delete();
+        return response()->json(null, 204);
     }
 
     // Implement other methods as needed

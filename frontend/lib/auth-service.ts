@@ -1,5 +1,6 @@
-import axios from "axios"
-import { API_URL } from "./utils"
+import { createApiClient } from "./axios"
+
+const api = createApiClient()
 
 export interface LoginCredentials {
   email: string
@@ -38,7 +39,7 @@ export interface RegisterCredentials {
 export const authService = {
   async login(credentials: LoginCredentials): Promise<User> {
     try {
-      const response = await axios.post<AuthResponse>(`${API_URL}/login`, credentials)
+      const response = await api.post<AuthResponse>("/login", credentials)
 
       // Armazenar token e informações do usuário
       if (typeof window !== "undefined") {
@@ -72,7 +73,7 @@ export const authService = {
 
   async register(credentials: RegisterCredentials): Promise<void> {
     try {
-      await axios.post(`${API_URL}/register`, credentials)
+      await api.post("/register", credentials)
     } catch (error) {
       if (error.response && error.response.data) {
         const errorData = error.response.data as ApiErrorResponse
@@ -98,7 +99,7 @@ export const authService = {
 
   async logout(): Promise<void> {
     try {
-      await axios.post(`${API_URL}/logout`)
+      await api.post("/logout")
     } catch (error) {
       console.error("Error during logout:", error)
     } finally {

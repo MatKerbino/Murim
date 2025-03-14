@@ -17,10 +17,15 @@ import { useAuth } from "@/contexts/auth-context"
 import { agendamentosService } from "@/lib/agendamentos-service"
 import { Calendar, Clock, User, CheckCircle, XCircle, AlertCircle, CreditCard } from "lucide-react"
 import type { Agendamento } from "@/lib/agendamentos-service"
+import type { ApiError } from "@/lib/api"
 import { planosService, type Plano } from "@/lib/planos-service"
+import { assinaturasService, type Assinatura } from "@/lib/assinaturas-service"
+import { perfilService, type UpdatePerfilData } from "@/lib/perfil-service"
+import { ImageUpload } from "@/components/ui/image-upload"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 export default function PerfilPage() {
-  const { user, isAuthenticated, isLoading: authLoading } = useAuth()
+  const { user, isAuthenticated, isLoading: authLoading, setUser } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
   const tabParam = searchParams.get("tab")
@@ -44,9 +49,13 @@ export default function PerfilPage() {
     current_password: "",
     password: "",
     password_confirmation: "",
+    foto: user?.foto || "",
   })
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  // Adicionar estado para assinaturas
+  const [assinaturas, setAssinaturas] = useState<Assinatura[]>([])
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     if (tabParam) {
@@ -65,6 +74,9 @@ export default function PerfilPage() {
         setAgendamentos(data)
       } catch (error) {
         console.error("Erro ao carregar agendamentos:", error)
+        setError(
+          (error as ApiError).message || "Não foi possível carregar seus agendamentos. Tente novamente mais tarde.",
+        )
       } finally {
         setIsLoadingAgendamentos(false)
       }
@@ -93,6 +105,40 @@ export default function PerfilPage() {
     loadPlanosAtivos()
   }, [isAuthenticated])
 
+  // Adicionar carregamento de assinaturas no useEffect
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true)
+      try {
+        const [userData, assinaturasData] = await Promise.all([
+          perfilService.getPerfil(),
+          assinaturasService.getMinhasAssinaturasAtivas(),
+        ])
+        setUser(userData)
+        setFormData((prev) => ({
+          ...prev,
+          name: userData.name,
+          email: userData.email,
+          foto: userData.foto || "",
+        }))
+        setAssinaturas(assinaturasData)
+      } catch (error) {
+        console.error("Erro ao carregar dados do perfil:", error)
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar os dados do perfil. Tente novamente mais tarde.",
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    if (isAuthenticated) {
+      loadData()
+    }
+  }, [isAuthenticated, setUser, toast])
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({
@@ -107,6 +153,13 @@ export default function PerfilPage() {
         [name]: "",
       }))
     }
+  }
+
+  const handleImageChange = (value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      foto: value,
+    }))
   }
 
   const validateForm = () => {
@@ -151,8 +204,8 @@ export default function PerfilPage() {
     setIsSubmitting(true)
 
     try {
-      // Enviar apenas os campos que foram alterados
-      const dataToUpdate: Record<string, any> = {}
+      // Preparar dados para atualização
+      const dataToUpdate: UpdatePerfilData = {}
 
       if (formData.name !== user?.name) {
         dataToUpdate.name = formData.name
@@ -168,8 +221,16 @@ export default function PerfilPage() {
         dataToUpdate.password_confirmation = formData.password_confirmation
       }
 
+      // Adicionar foto se foi alterada
+      if (formData.foto !== user?.foto) {
+        dataToUpdate.foto = formData.foto
+      }
+
       // Atualizar perfil
-      // await perfilService.updatePerfil(dataToUpdate)
+      const updatedUser = await perfilService.updatePerfil(dataToUpdate)
+
+      // Atualizar o usuário no contexto
+      setUser(updatedUser)
 
       toast({
         title: "Perfil atualizado com sucesso",
@@ -229,6 +290,14 @@ export default function PerfilPage() {
     }
   }
 
+  // Função para obter as iniciais do nome do usuário
+  const getUserInitials = (name: string) => {
+    if (!name) return "U"
+    const nameParts = name.split(" ")
+    if (nameParts.length === 1) return nameParts[0].charAt(0).toUpperCase()
+    return (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase()
+  }
+
   if (authLoading) {
     return (
       <div className="container py-10 flex justify-center items-center">
@@ -245,6 +314,37 @@ export default function PerfilPage() {
           Gerencie suas informações, planos e acompanhe seus agendamentos
         </p>
       </div>
+
+      {/* Adicionar seção de planos ativos na renderização */}
+      {assinaturas.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Meus Planos Ativos</CardTitle>
+            <CardDescription>Planos que você assinou na Academia Murim</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {assinaturas.map((assinatura) => (
+                <div key={assinatura.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div>
+                    <h3 className="font-medium">{assinatura.plano?.nome}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Válido até {new Date(assinatura.data_fim).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => assinaturasService.cancelarAssinatura(assinatura.id)}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Tabs defaultValue="agendamentos" value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
@@ -423,79 +523,96 @@ export default function PerfilPage() {
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Nome</Label>
-                      <Input
-                        id="name"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        className={formErrors.name ? "border-red-500" : ""}
-                      />
-                      {formErrors.name && <p className="text-red-500 text-sm">{formErrors.name}</p>}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        className={formErrors.email ? "border-red-500" : ""}
-                      />
-                      {formErrors.email && <p className="text-red-500 text-sm">{formErrors.email}</p>}
-                    </div>
-                  </div>
-
-                  <div className="pt-4 border-t">
-                    <h3 className="text-lg font-medium mb-4">Alterar Senha</h3>
-
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="current_password">Senha Atual</Label>
-                        <Input
-                          id="current_password"
-                          name="current_password"
-                          type="password"
-                          value={formData.current_password}
-                          onChange={handleChange}
-                          className={formErrors.current_password ? "border-red-500" : ""}
-                        />
-                        {formErrors.current_password && (
-                          <p className="text-red-500 text-sm">{formErrors.current_password}</p>
-                        )}
+                  <div className="flex flex-col md:flex-row gap-6">
+                    <div className="md:w-1/3 flex flex-col items-center justify-start">
+                      <div className="mb-4">
+                        <Avatar className="h-24 w-24">
+                          <AvatarImage src={formData.foto || ""} alt={formData.name} />
+                          <AvatarFallback>{getUserInitials(formData.name)}</AvatarFallback>
+                        </Avatar>
                       </div>
+                      <ImageUpload value={formData.foto || ""} onChange={handleImageChange} label="Foto de Perfil" />
+                      <p className="text-sm text-muted-foreground mt-2 text-center">
+                        Faça upload de uma foto para seu perfil. Recomendamos imagens quadradas.
+                      </p>
+                    </div>
 
+                    <div className="md:w-2/3 space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label htmlFor="password">Nova Senha</Label>
+                          <Label htmlFor="name">Nome</Label>
                           <Input
-                            id="password"
-                            name="password"
-                            type="password"
-                            value={formData.password}
+                            id="name"
+                            name="name"
+                            value={formData.name}
                             onChange={handleChange}
-                            className={formErrors.password ? "border-red-500" : ""}
+                            className={formErrors.name ? "border-red-500" : ""}
                           />
-                          {formErrors.password && <p className="text-red-500 text-sm">{formErrors.password}</p>}
+                          {formErrors.name && <p className="text-red-500 text-sm">{formErrors.name}</p>}
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="password_confirmation">Confirmar Nova Senha</Label>
+                          <Label htmlFor="email">Email</Label>
                           <Input
-                            id="password_confirmation"
-                            name="password_confirmation"
-                            type="password"
-                            value={formData.password_confirmation}
+                            id="email"
+                            name="email"
+                            type="email"
+                            value={formData.email}
                             onChange={handleChange}
-                            className={formErrors.password_confirmation ? "border-red-500" : ""}
+                            className={formErrors.email ? "border-red-500" : ""}
                           />
-                          {formErrors.password_confirmation && (
-                            <p className="text-red-500 text-sm">{formErrors.password_confirmation}</p>
-                          )}
+                          {formErrors.email && <p className="text-red-500 text-sm">{formErrors.email}</p>}
+                        </div>
+                      </div>
+
+                      <div className="pt-4 border-t">
+                        <h3 className="text-lg font-medium mb-4">Alterar Senha</h3>
+
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="current_password">Senha Atual</Label>
+                            <Input
+                              id="current_password"
+                              name="current_password"
+                              type="password"
+                              value={formData.current_password}
+                              onChange={handleChange}
+                              className={formErrors.current_password ? "border-red-500" : ""}
+                            />
+                            {formErrors.current_password && (
+                              <p className="text-red-500 text-sm">{formErrors.current_password}</p>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="password">Nova Senha</Label>
+                              <Input
+                                id="password"
+                                name="password"
+                                type="password"
+                                value={formData.password}
+                                onChange={handleChange}
+                                className={formErrors.password ? "border-red-500" : ""}
+                              />
+                              {formErrors.password && <p className="text-red-500 text-sm">{formErrors.password}</p>}
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor="password_confirmation">Confirmar Nova Senha</Label>
+                              <Input
+                                id="password_confirmation"
+                                name="password_confirmation"
+                                type="password"
+                                value={formData.password_confirmation}
+                                onChange={handleChange}
+                                className={formErrors.password_confirmation ? "border-red-500" : ""}
+                              />
+                              {formErrors.password_confirmation && (
+                                <p className="text-red-500 text-sm">{formErrors.password_confirmation}</p>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>

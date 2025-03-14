@@ -1,5 +1,6 @@
-import axios from "axios"
-import { API_URL } from "./utils"
+import { createApiClient } from "./axios"
+
+const api = createApiClient()
 
 export interface DiaSemana {
   id: number
@@ -39,7 +40,7 @@ export interface Horario {
 export const horariosService = {
   async getHorarios(): Promise<Horario[]> {
     try {
-      const response = await axios.get<{ status: string; data: Horario[] }>(`${API_URL}/horarios`)
+      const response = await api.get<{ status: string; data: Horario[] }>('/horarios')
       return response.data.data
     } catch (error) {
       throw error
@@ -48,7 +49,7 @@ export const horariosService = {
 
   async getDiasSemana(): Promise<DiaSemana[]> {
     try {
-      const response = await axios.get<{ status: string; data: DiaSemana[] }>(`${API_URL}/dias-semana`)
+      const response = await api.get<{ status: string; data: DiaSemana[] }>('/dias-semana')
       return response.data.data
     } catch (error) {
       throw error
@@ -57,7 +58,7 @@ export const horariosService = {
 
   async createHorario(horario: Omit<Horario, "id" | "created_at" | "updated_at">): Promise<Horario> {
     try {
-      const response = await axios.post<{ status: string; data: Horario }>(`${API_URL}/horarios`, horario)
+      const response = await api.post<{ status: string; data: Horario }>('/horarios', horario)
       return response.data.data
     } catch (error) {
       throw error
@@ -66,7 +67,7 @@ export const horariosService = {
 
   async updateHorario(id: number, horario: Partial<Horario>): Promise<Horario> {
     try {
-      const response = await axios.put<{ status: string; data: Horario }>(`${API_URL}/horarios/${id}`, horario)
+      const response = await api.put<{ status: string; data: Horario }>('/horarios/' + id, horario)
       return response.data.data
     } catch (error) {
       throw error
@@ -75,7 +76,7 @@ export const horariosService = {
 
   async deleteHorario(id: number): Promise<void> {
     try {
-      await axios.delete(`${API_URL}/horarios/${id}`)
+      await api.delete('/horarios/' + id)
     } catch (error) {
       throw error
     }
@@ -83,7 +84,7 @@ export const horariosService = {
 
   async getAulas(): Promise<Aula[]> {
     try {
-      const response = await axios.get<{ status: string; data: Aula[] }>(`${API_URL}/aulas`)
+      const response = await api.get<{ status: string; data: Aula[] }>('/aulas')
       return response.data.data
     } catch (error) {
       throw error

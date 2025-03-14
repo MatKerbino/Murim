@@ -1,5 +1,6 @@
-import axios from "axios"
-import { API_URL } from "./utils"
+import { createApiClient } from "./axios"
+
+const api = createApiClient()
 
 export interface Produto {
   id: number
@@ -29,7 +30,7 @@ export interface CategoriaProduto {
 export const produtosService = {
   async getProdutos(): Promise<Produto[]> {
     try {
-      const response = await axios.get(`${API_URL}/produtos`)
+      const response = await api.get("/produtos")
       return response.data.data || response.data
     } catch (error) {
       console.error("Error fetching produtos:", error)
@@ -39,7 +40,7 @@ export const produtosService = {
 
   async getProduto(id: number): Promise<Produto> {
     try {
-      const response = await axios.get(`${API_URL}/produtos/${id}`)
+      const response = await api.get(`/produtos/${id}`)
       return response.data.data || response.data
     } catch (error) {
       console.error(`Error fetching produto with id ${id}:`, error)
@@ -49,7 +50,7 @@ export const produtosService = {
 
   async createProduto(produto: Omit<Produto, "id" | "created_at" | "updated_at">): Promise<Produto> {
     try {
-      const response = await axios.post(`${API_URL}/produtos`, produto)
+      const response = await api.post("/produtos", produto)
       return response.data.data || response.data
     } catch (error) {
       console.error("Error creating produto:", error)
@@ -59,7 +60,7 @@ export const produtosService = {
 
   async updateProduto(id: number, produto: Partial<Produto>): Promise<Produto> {
     try {
-      const response = await axios.post(`${API_URL}/produtos/${id}?_method=PUT`, produto)
+      const response = await api.post(`/produtos/${id}?_method=PUT`, produto)
       return response.data.data || response.data
     } catch (error) {
       console.error(`Error updating produto with id ${id}:`, error)
@@ -69,7 +70,7 @@ export const produtosService = {
 
   async deleteProduto(id: number): Promise<void> {
     try {
-      await axios.delete(`${API_URL}/produtos/${id}`)
+      await api.delete(`/produtos/${id}`)
     } catch (error) {
       console.error(`Error deleting produto with id ${id}:`, error)
       throw error
@@ -78,7 +79,7 @@ export const produtosService = {
 
   async getCategorias(): Promise<CategoriaProduto[]> {
     try {
-      const response = await axios.get<{ status: string; data: CategoriaProduto[] }>(`${API_URL}/categorias-produtos`)
+      const response = await api.get<{ status: string; data: CategoriaProduto[] }>("/categorias-produtos")
       return response.data.data
     } catch (error) {
       throw error

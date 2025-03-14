@@ -1,5 +1,6 @@
-import axios from "axios"
-import { API_URL } from "./utils"
+import { createApiClient } from "./axios"
+
+const api = createApiClient()
 
 export interface Personal {
   id: number
@@ -17,7 +18,7 @@ export interface Personal {
 export const personaisService = {
   async getPersonais(): Promise<Personal[]> {
     try {
-      const response = await axios.get(`${API_URL}/personais`)
+      const response = await api.get("/personais")
       if (response.data && response.data.data) {
         return response.data.data
       }
@@ -29,7 +30,7 @@ export const personaisService = {
 
   async getPersonal(id: number): Promise<Personal> {
     try {
-      const response = await axios.get(`${API_URL}/personais/${id}`)
+      const response = await api.get(`/personais/${id}`)
       return response.data.data || response.data
     } catch (error) {
       console.error(`Error fetching personal with id ${id}:`, error)
@@ -39,7 +40,7 @@ export const personaisService = {
 
   async createPersonal(personal: FormData): Promise<Personal> {
     try {
-      const response = await axios.post(`${API_URL}/personais`, personal, {
+      const response = await api.post("/personais", personal, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -53,8 +54,8 @@ export const personaisService = {
 
   async updatePersonal(id: number, personal: FormData): Promise<Personal> {
     try {
-      const response = await axios.post(
-        `${API_URL}/personais/${id}?_method=PUT`,
+      const response = await api.post(
+        `/personais/${id}?_method=PUT`,
         personal,
         {
           headers: {
@@ -71,7 +72,7 @@ export const personaisService = {
 
   async deletePersonal(id: number): Promise<void> {
     try {
-      await axios.delete(`${API_URL}/personais/${id}`)
+      await api.delete(`/personais/${id}`)
     } catch (error) {
       console.error(`Error deleting personal with id ${id}:`, error)
       throw error

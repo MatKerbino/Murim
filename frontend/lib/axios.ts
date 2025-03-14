@@ -1,4 +1,5 @@
 import axios from 'axios';
+export const API_URL = process.env.NEXT_PUBLIC_API_URL
 
 // Create an Axios instance with default configuration
 const axiosInstance = axios.create({
@@ -44,5 +45,10 @@ axiosInstance.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Function to create a new Axios client
+export const createApiClient = () => {
+  return axiosInstance;
+};
 
 export default axiosInstance; 
