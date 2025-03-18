@@ -1,7 +1,7 @@
-import { createApiClient } from "./axios"
+import axiosInstance from "./axios"
 import type { Plano } from "./planos-service"
 
-const api = createApiClient()
+const api = axiosInstance
 
 export interface Assinatura {
   id: number

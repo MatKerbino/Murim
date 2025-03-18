@@ -1,4 +1,4 @@
-import { createApiClient } from "./axios"
+import axiosInstance from "./axios"
 
 export interface Plano {
   id: number
@@ -12,7 +12,7 @@ export interface Plano {
   updated_at: string
 }
 
-const api = createApiClient()
+const api = axiosInstance
 
 export const planosService = {
   async getPlanos(): Promise<Plano[]> {

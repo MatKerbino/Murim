@@ -1,4 +1,4 @@
-import { createApiClient } from "./axios"
+import axiosInstance from "./axios"
 
 export interface Agendamento {
   id: number
@@ -21,7 +21,7 @@ export interface Agendamento {
   }
 }
 
-const api = createApiClient()
+const api = axiosInstance
 
 export const agendamentosService = {
   async getAgendamentos(): Promise<Agendamento[]> {

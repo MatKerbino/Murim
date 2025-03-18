@@ -14,7 +14,6 @@ return new class extends Migration
         Schema::create('dicas', function (Blueprint $table) {
             $table->id();
             $table->string('titulo');
-            $table->string('slug')->unique();
             $table->text('descricao');
             $table->text('conteudo');
             $table->foreignId('categoria_id')->constrained('categorias_dicas');

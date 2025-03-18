@@ -1,4 +1,4 @@
-import { createApiClient } from "./axios"
+import axiosInstance from "./axios"
 
 export interface Pagamento {
   id: number
@@ -23,7 +23,7 @@ export interface Pagamento {
   }
 }
 
-const api = createApiClient()
+const api = axiosInstance
 
 export const pagamentosService = {
   async getPagamentos(): Promise<Pagamento[]> {

@@ -1,4 +1,4 @@
-import { createApiClient } from "./axios"
+import axiosInstance from "./axios"
 import axios, { isAxiosError } from "axios"
 
 export interface Aluno {
@@ -22,7 +22,7 @@ export interface Aluno {
   }
 }
 
-const api = createApiClient()
+const api = axiosInstance
 
 export const alunosService = {
   async getAlunos(): Promise<Aluno[]> {

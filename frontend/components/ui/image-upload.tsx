@@ -1,75 +1,83 @@
 "use client"
 
-import type React from "react"
-
 import { useState, useRef } from "react"
-import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Upload, X } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Upload, X, Image as ImageIcon } from "lucide-react"
+import Image from "next/image"
 
 interface ImageUploadProps {
-  value: string
-  onChange: (value: string) => void
-  label?: string
+  onChange: (file: File | null) => void
+  value?: string
+  preview?: string
 }
 
-export function ImageUpload({ value, onChange, label }: ImageUploadProps) {
-  const [preview, setPreview] = useState<string>(value)
+export function ImageUpload({ onChange, value, preview }: ImageUploadProps) {
+  const [previewUrl, setPreviewUrl] = useState<string | null>(preview || value || null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    // Simulando upload - em um ambiente real, você enviaria para um servidor
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      const result = reader.result as string
-      setPreview(result)
-      onChange(result)
+    const file = e.target.files?.[0] || null
+    
+    if (file) {
+      // Criar URL para preview local
+      const objectUrl = URL.createObjectURL(file)
+      setPreviewUrl(objectUrl)
+      onChange(file)
     }
-    reader.readAsDataURL(file)
   }
 
   const handleRemove = () => {
-    setPreview("")
-    onChange("")
+    setPreviewUrl(null)
+    onChange(null)
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
   }
 
+  const handleButtonClick = () => {
+    fileInputRef.current?.click()
+  }
+
   return (
     <div className="space-y-2">
-      {label && <p className="text-sm font-medium">{label}</p>}
-      <div className="flex flex-col items-center gap-4">
-        {preview ? (
-          <div className="relative w-full aspect-square max-w-[200px] rounded-md overflow-hidden">
-            <Image src={preview || "/placeholder.svg"} alt="Preview" fill className="object-cover" />
-            <button
+      <div 
+        className="border-2 border-dashed rounded-md p-4 hover:bg-muted/50 transition cursor-pointer"
+        onClick={handleButtonClick}
+      >
+        {previewUrl ? (
+          <div className="relative aspect-video w-full overflow-hidden rounded-md">
+            <Image 
+              src={previewUrl} 
+              alt="Preview" 
+              fill 
+              className="object-cover"
+            />
+            <button 
               type="button"
-              onClick={handleRemove}
-              className="absolute top-2 right-2 p-1 rounded-full bg-destructive text-destructive-foreground"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleRemove();
+              }}
+              className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full hover:bg-black/70"
             >
               <X className="h-4 w-4" />
             </button>
           </div>
         ) : (
-          <div
-            className="border-2 border-dashed border-muted-foreground/25 rounded-md p-8 w-full max-w-[200px] aspect-square flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-muted-foreground/40 transition"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <Upload className="h-8 w-8 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground text-center">Clique para fazer upload</p>
+          <div className="flex flex-col items-center justify-center py-4">
+            <ImageIcon className="h-10 w-10 text-muted-foreground mb-2" />
+            <p className="text-sm text-muted-foreground">Clique para selecionar uma imagem</p>
           </div>
         )}
-        <input type="file" accept="image/*" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
-        {!preview && (
-          <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
-            Selecionar imagem
-          </Button>
-        )}
       </div>
+      <Input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept="image/*"
+        className="hidden"
+      />
     </div>
   )
 }

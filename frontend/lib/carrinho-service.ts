@@ -1,4 +1,4 @@
-import { createApiClient } from "./axios"
+import axiosInstance from "./axios"
 
 export interface CartItem {
   id: number
@@ -15,7 +15,7 @@ export interface CartItem {
   }
 }
 
-const api = createApiClient()
+const api = axiosInstance
 
 export const carrinhoService = {
   async getCartItems(): Promise<CartItem[]> {

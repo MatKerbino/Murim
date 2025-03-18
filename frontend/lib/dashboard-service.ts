@@ -1,4 +1,4 @@
-import { createApiClient } from "./axios"
+import axiosInstance from "./axios"
 
 export interface DashboardStats {
   totalAlunos: number
@@ -35,7 +35,7 @@ export interface DashboardStats {
   }>
 }
 
-const api = createApiClient()
+const api = axiosInstance
 
 export const dashboardService = {
   async getStats(): Promise<DashboardStats> {

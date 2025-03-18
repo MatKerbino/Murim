@@ -1,6 +1,6 @@
-import { createApiClient } from "./axios"
+import axiosInstance from "./axios"
 
-const api = createApiClient()
+const api = axiosInstance
 
 export interface LoginCredentials {
   email: string
@@ -111,17 +111,29 @@ export const authService = {
     }
   },
 
-  getCurrentUser(): User | null {
-    if (typeof window === "undefined") return null
-
-    const userStr = localStorage.getItem("user")
-    if (!userStr) return null
-
-    try {
-      return JSON.parse(userStr) as User
-    } catch (error) {
-      return null
+  getCurrentUser(): any {
+    // Verifique se estamos no ambiente do cliente
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token');
+      
+      // Se não houver token, o usuário não está autenticado
+      if (!token) {
+        return null;
+      }
+      
+      // Obter informações do usuário do localStorage ou de um estado global
+      const userString = localStorage.getItem('user');
+      if (userString) {
+        try {
+          return JSON.parse(userString);
+        } catch (error) {
+          console.error('Erro ao obter informações do usuário:', error);
+          return null;
+        }
+      }
     }
+    
+    return null;
   },
 
   isAuthenticated(): boolean {

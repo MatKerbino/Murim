@@ -46,18 +46,4 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-// Function to create a new Axios client
-export const createApiClient = () => {
-  const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api",
-    headers: {
-      "Content-Type": "application/json",
-      "Accept": "application/json",
-    },
-    withCredentials: true, // Isso garante que cookies serão enviados com as requisições
-  });
-  
-  return api;
-};
-
 export default axiosInstance; 

@@ -1,4 +1,4 @@
-import { createApiClient } from "./axios"
+import axiosInstance from "./axios"
 import axios, { isAxiosError } from "axios"
 
 export interface CategoriaDica {
@@ -30,7 +30,7 @@ export interface Dica {
   updated_at: string
 }
 
-const api = createApiClient()
+const api = axiosInstance
 
 export const dicasAdminService = {
   async getDicas(): Promise<Dica[]> {
@@ -59,21 +59,75 @@ export const dicasAdminService = {
 
   async createDica(dica: FormData): Promise<Dica> {
     try {
-      const response = await api.post<Dica>("/dicas", dica, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      })
-      return response.data.data
+      // Extrair dados do FormData para um objeto
+      const dicaObj: any = {};
+      for (let pair of dica.entries()) {
+        if (pair[0] === 'imagem' && pair[1] instanceof File) {
+          // Tratar imagem depois
+          continue;
+        }
+        
+        // Para os campos boolean, converter explicitamente
+        if (pair[0] === 'publicado' || pair[0] === 'destaque') {
+          dicaObj[pair[0]] = pair[1] === '1' || pair[1] === 'true';
+        } else {
+          dicaObj[pair[0]] = pair[1];
+        }
+      }
+      
+      // Se tivermos uma imagem, usar FormData
+      if (dica.get('imagem') instanceof File) {
+        // Criar novo FormData
+        const formData = new FormData();
+        
+        // Adicionar campos convertidos
+        for (const key in dicaObj) {
+          // Converter booleanos para string explícita 'true'/'false'
+          if (typeof dicaObj[key] === 'boolean') {
+            formData.append(key, dicaObj[key] ? 'true' : 'false');
+          } else {
+            formData.append(key, dicaObj[key]);
+          }
+        }
+        
+        // Adicionar imagem
+        formData.append('imagem', dica.get('imagem') as File);
+        
+        console.log('Enviando dados via FormData:');
+        for (let pair of formData.entries()) {
+          console.log(pair[0] + ': ' + (pair[1] instanceof File ? 'File' : pair[1]));
+        }
+        
+        const response = await api.post("/dicas", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        
+        return response.data.data;
+      } else {
+        // Sem imagem, usar JSON
+        console.log('Enviando dados via JSON:', dicaObj);
+        
+        const response = await api.post("/dicas", dicaObj, {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        
+        return response.data.data;
+      }
     } catch (error) {
-      console.error("Erro ao criar dica:", error)
-      throw error
+      console.error("Erro ao criar dica:", error);
+      throw error;
     }
   },
 
   async updateDica(id: number, dica: FormData): Promise<Dica> {
     try {
-      const response = await api.post<Dica>(`/dicas/${id}?_method=PUT`, dica, {
+      // Para o Laravel, quando trabalhamos com FormData e PUT, precisamos usar 
+      // o método spoofing _method=PUT
+      const response = await api.post(`/dicas/${id}?_method=PUT`, dica, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -97,8 +151,8 @@ export const dicasAdminService = {
   async getCategorias(): Promise<CategoriaDica[]> {
     try {
       const response = await api.get("/categorias-dicas")
-      console.log(response.data)
-      return response.data
+      // Corrigido para usar o formato correto de resposta da API
+      return response.data.data || response.data || []
     } catch (error) {
       console.error("Erro ao buscar categorias:", error)
       throw error
@@ -108,27 +162,41 @@ export const dicasAdminService = {
   async getCategoria(id: number): Promise<CategoriaDica> {
     try {
       const response = await api.get(`/categorias-dicas/${id}`)
-      return response.data
+      // Corrigido para garantir compatibilidade com o formato de resposta
+      return response.data.data || response.data
     } catch (error) {
       console.error("Erro ao buscar categoria:", error)
       throw error
     }
   },
 
-  async createCategoria(categoria: { nome: string }): Promise<CategoriaDica> {
+  async createCategoria(categoria: { nome: string; descricao?: string }): Promise<CategoriaDica> {
     try {
-      const response = await api.post<CategoriaDica>("/categorias-dicas", categoria)
-      return response.data
+      // Adiciona a descrição como campo opcional que o backend espera
+      const categoriaData = {
+        nome: categoria.nome,
+        descricao: categoria.descricao || '',
+        // O backend pode gerar o slug automaticamente se não for fornecido
+      }
+      
+      const response = await api.post("/categorias-dicas", categoriaData)
+      return response.data.data || response.data
     } catch (error) {
       console.error("Erro ao criar categoria:", error)
       throw error
     }
   },
 
-  async updateCategoria(id: number, categoria: { nome: string }): Promise<CategoriaDica> {
+  async updateCategoria(id: number, categoria: { nome: string; descricao?: string }): Promise<CategoriaDica> {
     try {
-      const response = await api.put<CategoriaDica>(`/categorias-dicas/${id}`, categoria)
-      return response.data
+      // Incluindo os campos que o backend espera
+      const categoriaData = {
+        nome: categoria.nome,
+        descricao: categoria.descricao || '',
+      }
+      
+      const response = await api.put(`/categorias-dicas/${id}`, categoriaData)
+      return response.data.data || response.data
     } catch (error) {
       console.error("Erro ao atualizar categoria:", error)
       throw error
@@ -144,4 +212,3 @@ export const dicasAdminService = {
     }
   },
 }
-

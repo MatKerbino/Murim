@@ -1,4 +1,4 @@
-import { createApiClient } from "./axios"
+import axiosInstance from "./axios"
 import axios, { isAxiosError } from "axios"
 
 export interface PerfilUser {
@@ -21,7 +21,7 @@ export interface UpdatePerfilData {
   foto?: File | string | null
 }
 
-const api = createApiClient()
+const api = axiosInstance
 
 export const perfilService = {
   async getPerfil(): Promise<PerfilUser> {

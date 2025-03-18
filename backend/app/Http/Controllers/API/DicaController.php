@@ -23,14 +23,17 @@ class DicaController extends Controller
      */
     public function store(Request $request)
     {
+        $request['publicado'] = filter_var($request['publicado'], FILTER_VALIDATE_BOOLEAN);
+        $request['destaque'] = filter_var($request['destaque'], FILTER_VALIDATE_BOOLEAN);
         $validator = Validator::make($request->all(), [
             'titulo' => 'required|string|max:255',
             'descricao' => 'required|string',
             'conteudo' => 'required|string',
-            'autor' => 'required|string|max:255',
+            'autor_id' => 'required|string|max:255',
             'categoria_id' => 'required|exists:categorias_dicas,id', // Verifica se a categoria existe
             'imagem' => 'nullable|string', // Adiciona validação para imagem, se necessário
             'publicado' => 'boolean', // Adiciona validação para o campo publicado
+            'destaque' => 'boolean', // Adiciona validação para o campo destaque
         ]);
 
         if ($validator->fails()) {

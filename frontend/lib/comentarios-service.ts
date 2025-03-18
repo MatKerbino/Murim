@@ -1,7 +1,7 @@
-import { createApiClient } from "./axios"
+import axiosInstance from "./axios"
 import axios from "axios"
 
-const api = createApiClient()
+const api = axiosInstance
 
 export interface Comentario {
   id: number
