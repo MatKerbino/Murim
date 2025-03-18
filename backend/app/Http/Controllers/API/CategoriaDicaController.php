@@ -25,7 +25,7 @@ class CategoriaDicaController extends Controller
     {
         $request->validate([
             'nome' => 'required|string|max:255',
-            'slug' => 'required|string|max:255|unique:categorias_dicas',
+            'slug' => 'nullable|string|max:255|unique:categorias_dicas',
             'descricao' => 'nullable|string',
         ]);
 

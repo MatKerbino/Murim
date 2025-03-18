@@ -37,7 +37,7 @@ const getAxiosConfig = () => {
 export const contatoService = {
   async enviarContato(contato: ContatoForm): Promise<Contato> {
     try {
-      const response = await api.post("/contatos", contato)
+      const response = await api.post("/contatos", contato, getAxiosConfig())
       return response.data.data
     } catch (error) {
       console.error("Erro ao enviar contato:", error)

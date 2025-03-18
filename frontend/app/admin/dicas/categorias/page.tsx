@@ -40,6 +40,7 @@ export default function AdminCategoriasDicasPage() {
     setError(null)
     try {
       const data = await dicasAdminService.getCategorias()
+      console.log(data)
       setCategorias(data || [])
     } catch (error) {
       console.error("Erro ao carregar categorias:", error)
@@ -90,6 +91,7 @@ export default function AdminCategoriasDicasPage() {
         // Criar nova categoria
         const novaCategoria = await dicasAdminService.createCategoria({ nome: currentCategoria.nome })
         setCategorias([...categorias, novaCategoria])
+        loadCategorias()
       }
 
       setIsDialogOpen(false)

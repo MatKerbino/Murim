@@ -62,6 +62,9 @@ Route::get('/categorias-dicas', [CategoriaDicaController::class, 'index']);
 // Comentários públicos
 Route::get('/dicas/{dicaId}/comentarios', [ComentarioController::class, 'index']);
 
+// Rotas para consulta de dados públicos
+Route::get('/horarios', [HorarioController::class, 'index']);
+
 // Rotas protegidas por autenticação
 Route::middleware('auth:api')->group(function () {
   // Rota para logout
@@ -133,11 +136,13 @@ Route::middleware('auth:api')->group(function () {
       Route::apiResource('dias-semana', DiaSemanaController::class)->except(['index']);
       
       // CRUD Horários
-      Route::apiResource('horarios', HorarioController::class);
+      Route::apiResource('horarios', HorarioController::class)->except(['index']);
       
       // CRUD Dicas e Categorias
       Route::apiResource('dicas', DicaController::class)->except(['index', 'show']);
       Route::apiResource('categorias-dicas', CategoriaDicaController::class)->except(['index']);
+      Route::put('/categorias-dicas/{id}', [CategoriaDicaController::class, 'update']);
+      Route::put('/categorias-dicas', [CategoriaDicaController::class, 'store']);
       
       // Gerenciamento de Comentários
       Route::get('/admin/comentarios', [ComentarioController::class, 'listarTodos']);

@@ -117,7 +117,7 @@ export default function PlanosPage() {
             <CardContent className="flex-grow">
               <div className="mb-6">
                 <p className="text-3xl font-bold">
-                  R$ {plano.valor.toFixed(2)}
+                  R$ {typeof plano.valor === 'number' ? plano.valor.toFixed(2) : 'Valor inválido'}
                   <span className="text-sm font-normal text-muted-foreground">
                     /{plano.duracao === 1 ? "mês" : `${plano.duracao} meses`}
                   </span>

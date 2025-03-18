@@ -11,9 +11,10 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "@/components/ui/use-toast"
 import { ToastAction } from "@/components/ui/toast"
-import { MapPin, Phone, Mail, Clock, AlertCircle } from "lucide-react"
+import { MapPin, Phone, Mail, Clock, AlertCircle, CheckCircle } from "lucide-react"
 import { contatoService } from "@/lib/contato-service"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { headers } from "next/headers"
 
 export default function ContatoPage() {
   const [formData, setFormData] = useState({
@@ -26,13 +27,24 @@ export default function ContatoPage() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [apiError, setApiError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
+
+    // Formatação de telefone
+    if (name === "telefone") {
+      const formattedValue = formatPhoneNumber(value)
+      setFormData((prev) => ({
+        ...prev,
+        [name]: formattedValue,
+      }))
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }))
+    }
 
     // Limpa o erro do campo quando o usuário começa a digitar
     if (errors[name]) {
@@ -44,6 +56,28 @@ export default function ContatoPage() {
 
     // Limpar erro da API quando o usuário digita
     setApiError(null)
+
+    // Limpar mensagem de sucesso quando o usuário começa a editar novamente
+    if (success) {
+      setSuccess(false)
+    }
+  }
+
+  // Função para formatar número de telefone
+  const formatPhoneNumber = (value: string) => {
+    // Remove todos os caracteres não numéricos
+    const numbers = value.replace(/\D/g, "")
+
+    // Aplica a formatação de acordo com o tamanho
+    if (numbers.length <= 2) {
+      return numbers
+    } else if (numbers.length <= 6) {
+      return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`
+    } else if (numbers.length <= 10) {
+      return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 6)}-${numbers.slice(6)}`
+    } else {
+      return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`
+    }
   }
 
   const handleSelectChange = (name: string, value: string) => {
@@ -62,6 +96,11 @@ export default function ContatoPage() {
 
     // Limpar erro da API quando o usuário seleciona uma opção
     setApiError(null)
+
+    // Limpar mensagem de sucesso quando o usuário começa a editar novamente
+    if (success) {
+      setSuccess(false)
+    }
   }
 
   const validateForm = () => {
@@ -96,6 +135,7 @@ export default function ContatoPage() {
 
     // Limpar erro da API
     setApiError(null)
+    setSuccess(false)
 
     if (!validateForm()) {
       return
@@ -108,10 +148,13 @@ export default function ContatoPage() {
       await contatoService.enviarContato({
         nome: formData.nome,
         email: formData.email,
-        telefone: formData.telefone || undefined,
+        telefone: formData.telefone ? formData.telefone.replace(/\D/g, "") : undefined,
         assunto: formData.assunto,
         mensagem: formData.mensagem,
-      })
+      });
+
+      // Mostrar mensagem de sucesso
+      setSuccess(true)
 
       toast({
         title: "Mensagem enviada com sucesso!",
@@ -196,6 +239,16 @@ export default function ContatoPage() {
               </Alert>
             )}
 
+            {success && (
+              <Alert variant="default" className="mb-4 bg-green-50 border-green-200">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <AlertTitle className="text-green-600">Mensagem enviada com sucesso!</AlertTitle>
+                <AlertDescription className="text-green-600">
+                  Agradecemos seu contato. Nossa equipe responderá em breve.
+                </AlertDescription>
+              </Alert>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -234,6 +287,7 @@ export default function ContatoPage() {
                     name="telefone"
                     value={formData.telefone}
                     onChange={handleChange}
+                    placeholder="(00) 00000-0000"
                     className={errors.telefone ? "border-red-500" : ""}
                   />
                   {errors.telefone && <p className="text-red-500 text-sm">{errors.telefone}</p>}

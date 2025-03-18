@@ -26,6 +26,8 @@ export default function AdminHorariosPage() {
     hora_inicio: "",
     hora_fim: "",
     tipo_aula: "",
+    nome: "",
+    instrutor: "",
   })
   const [isAdding, setIsAdding] = useState(false)
 
@@ -66,7 +68,14 @@ export default function AdminHorariosPage() {
   }
 
   const handleAddHorario = async () => {
-    if (!novoHorario.dia_semana_id || !novoHorario.hora_inicio || !novoHorario.hora_fim || !novoHorario.tipo_aula) {
+    if (
+      !novoHorario.dia_semana_id ||
+      !novoHorario.hora_inicio ||
+      !novoHorario.hora_fim ||
+      !novoHorario.tipo_aula ||
+      !novoHorario.nome ||
+      !novoHorario.instrutor
+    ) {
       toast({
         variant: "destructive",
         title: "Erro",
@@ -82,6 +91,8 @@ export default function AdminHorariosPage() {
         hora_inicio: novoHorario.hora_inicio,
         hora_fim: novoHorario.hora_fim,
         tipo_aula: novoHorario.tipo_aula,
+        nome: novoHorario.nome,
+        instrutor: novoHorario.instrutor,
       })
 
       // Adicionar o dia da semana ao horário adicionado
@@ -97,6 +108,8 @@ export default function AdminHorariosPage() {
         hora_inicio: "",
         hora_fim: "",
         tipo_aula: "",
+        nome: "",
+        instrutor: "",
       })
       toast({
         title: "Sucesso",
@@ -144,6 +157,8 @@ export default function AdminHorariosPage() {
       horario.hora_inicio.toLowerCase().includes(searchTerm.toLowerCase()) ||
       horario.hora_fim.toLowerCase().includes(searchTerm.toLowerCase()) ||
       horario.tipo_aula?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      horario.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      horario.instrutor?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       "",
   )
 
@@ -163,7 +178,7 @@ export default function AdminHorariosPage() {
           <CardDescription>Defina os horários disponíveis para agendamentos</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium mb-1">Dia da Semana</label>
               <Select
@@ -198,6 +213,9 @@ export default function AdminHorariosPage() {
                 onChange={(e) => setNovoHorario({ ...novoHorario, hora_fim: e.target.value })}
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium mb-1">Tipo de Aula</label>
               <Select
@@ -215,6 +233,24 @@ export default function AdminHorariosPage() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Nome da Aula</label>
+              <Input
+                type="text"
+                value={novoHorario.nome}
+                onChange={(e) => setNovoHorario({ ...novoHorario, nome: e.target.value })}
+                placeholder="Ex: Yoga para Iniciantes"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Instrutor</label>
+              <Input
+                type="text"
+                value={novoHorario.instrutor}
+                onChange={(e) => setNovoHorario({ ...novoHorario, instrutor: e.target.value })}
+                placeholder="Nome do instrutor"
+              />
             </div>
           </div>
           <div className="mt-4 flex justify-end">
@@ -268,7 +304,9 @@ export default function AdminHorariosPage() {
                     <TableHead>Dia da Semana</TableHead>
                     <TableHead>Hora Início</TableHead>
                     <TableHead>Hora Fim</TableHead>
+                    <TableHead>Nome da Aula</TableHead>
                     <TableHead>Tipo de Aula</TableHead>
+                    <TableHead>Instrutor</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -278,7 +316,9 @@ export default function AdminHorariosPage() {
                       <TableCell>{horario.dia_semana?.nome || "Dia não especificado"}</TableCell>
                       <TableCell>{horario.hora_inicio}</TableCell>
                       <TableCell>{horario.hora_fim}</TableCell>
+                      <TableCell>{horario.nome}</TableCell>
                       <TableCell>{getTipoAulaNome(horario.tipo_aula || "")}</TableCell>
+                      <TableCell>{horario.instrutor}</TableCell>
                       <TableCell className="text-right">
                         <Button
                           variant="outline"

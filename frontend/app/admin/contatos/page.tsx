@@ -315,14 +315,14 @@ export default function ContatosPage() {
 
       {/* Dialog para visualizar mensagem */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Mensagem de {selectedContato?.nome}</DialogTitle>
             <DialogDescription>
               Recebida em {selectedContato && new Date(selectedContato.created_at).toLocaleString("pt-BR")}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto">
             <div>
               <h4 className="text-sm font-medium text-muted-foreground">Assunto</h4>
               <p className="text-base">{selectedContato && traduzirAssunto(selectedContato.assunto)}</p>
@@ -339,7 +339,9 @@ export default function ContatosPage() {
             )}
             <div>
               <h4 className="text-sm font-medium text-muted-foreground">Mensagem</h4>
-              <p className="text-base whitespace-pre-line">{selectedContato?.mensagem}</p>
+              <div className="text-base whitespace-pre-wrap bg-gray-50 p-3 rounded-md border max-h-[200px] overflow-y-auto">
+                {selectedContato?.mensagem}
+              </div>
             </div>
           </div>
           <DialogFooter className="flex sm:justify-between">

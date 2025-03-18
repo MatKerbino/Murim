@@ -5,6 +5,7 @@ export interface CategoriaDica {
   id: number
   nome: string
   slug: string
+  descricao: string
   created_at: string
   updated_at: string
 }
@@ -14,6 +15,7 @@ export interface Dica {
   titulo: string
   slug: string
   conteudo: string
+  descricao: string
   imagem: string | null
   categoria_id: number
   categoria?: CategoriaDica
@@ -95,7 +97,8 @@ export const dicasAdminService = {
   async getCategorias(): Promise<CategoriaDica[]> {
     try {
       const response = await api.get("/categorias-dicas")
-      return response.data.data
+      console.log(response.data)
+      return response.data
     } catch (error) {
       console.error("Erro ao buscar categorias:", error)
       throw error
@@ -105,7 +108,7 @@ export const dicasAdminService = {
   async getCategoria(id: number): Promise<CategoriaDica> {
     try {
       const response = await api.get(`/categorias-dicas/${id}`)
-      return response.data.data
+      return response.data
     } catch (error) {
       console.error("Erro ao buscar categoria:", error)
       throw error
@@ -115,7 +118,7 @@ export const dicasAdminService = {
   async createCategoria(categoria: { nome: string }): Promise<CategoriaDica> {
     try {
       const response = await api.post<CategoriaDica>("/categorias-dicas", categoria)
-      return response.data.data
+      return response.data
     } catch (error) {
       console.error("Erro ao criar categoria:", error)
       throw error
@@ -125,7 +128,7 @@ export const dicasAdminService = {
   async updateCategoria(id: number, categoria: { nome: string }): Promise<CategoriaDica> {
     try {
       const response = await api.put<CategoriaDica>(`/categorias-dicas/${id}`, categoria)
-      return response.data.data
+      return response.data
     } catch (error) {
       console.error("Erro ao atualizar categoria:", error)
       throw error
