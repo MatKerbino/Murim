@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
@@ -10,12 +10,14 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "@/components/ui/use-toast"
 import { ErrorMessage } from "@/components/ui/error-message"
 import { horariosAdminService } from "@/lib/horarios-admin-service"
+import { personaisService } from "@/lib/personais-service"
 import { Search, Trash2 } from "lucide-react"
 import type { Horario, DiaSemana } from "@/lib/horarios-admin-service"
 
 export default function AdminHorariosPage() {
   const [horarios, setHorarios] = useState<Horario[]>([])
   const [diasSemana, setDiasSemana] = useState<DiaSemana[]>([])
+  const [instrutores, setInstrutores] = useState<{ id: number; nome: string }[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
@@ -45,27 +47,65 @@ export default function AdminHorariosPage() {
     { value: "danca", label: "Dança" },
   ]
 
-  useEffect(() => {
-    loadData()
-  }, [])
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setIsLoading(true)
     setError(null)
     try {
-      const [horariosData, diasSemanaData] = await Promise.all([
+      // Buscar dados em paralelo
+      const [horariosData, diasSemanaData, personaisData] = await Promise.all([
         horariosAdminService.getHorarios(),
         horariosAdminService.getDiasSemana(),
+        personaisService.getPersonais(),
       ])
-      setHorarios(horariosData)
-      setDiasSemana(diasSemanaData)
+
+      // Verificar se os dados foram retornados corretamente
+      if (!diasSemanaData || diasSemanaData.length === 0) {
+        console.error("Não foram encontrados dias da semana")
+        // Dias da semana padrão caso a API falhe
+        setDiasSemana([
+          { id: 1, nome: "Segunda-feira", created_at: "", updated_at: "" },
+          { id: 2, nome: "Terça-feira", created_at: "", updated_at: "" },
+          { id: 3, nome: "Quarta-feira", created_at: "", updated_at: "" },
+          { id: 4, nome: "Quinta-feira", created_at: "", updated_at: "" },
+          { id: 5, nome: "Sexta-feira", created_at: "", updated_at: "" },
+          { id: 6, nome: "Sábado", created_at: "", updated_at: "" },
+          { id: 7, nome: "Domingo", created_at: "", updated_at: "" },
+        ])
+      } else {
+        setDiasSemana(diasSemanaData)
+      }
+
+      // Processar instrutores
+      if (personaisData && personaisData.length > 0) {
+        setInstrutores(personaisData.map((p) => ({ id: p.id, nome: p.nome })))
+      } else {
+        console.error("Não foram encontrados instrutores")
+        setInstrutores([])
+      }
+
+      setHorarios(horariosData || [])
     } catch (error) {
       console.error("Erro ao carregar dados:", error)
       setError("Não foi possível carregar os horários. Tente novamente mais tarde.")
+
+      // Dias da semana padrão em caso de erro
+      setDiasSemana([
+        { id: 1, nome: "Segunda-feira", created_at: "", updated_at: "" },
+        { id: 2, nome: "Terça-feira", created_at: "", updated_at: "" },
+        { id: 3, nome: "Quarta-feira", created_at: "", updated_at: "" },
+        { id: 4, nome: "Quinta-feira", created_at: "", updated_at: "" },
+        { id: 5, nome: "Sexta-feira", created_at: "", updated_at: "" },
+        { id: 6, nome: "Sábado", created_at: "", updated_at: "" },
+        { id: 7, nome: "Domingo", created_at: "", updated_at: "" },
+      ])
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
 
   const handleAddHorario = async () => {
     if (
@@ -152,14 +192,12 @@ export default function AdminHorariosPage() {
   // Filtrar horários com base no termo de pesquisa
   const filteredHorarios = horarios.filter(
     (horario) =>
-      horario.dia_semana?.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      "" ||
-      horario.hora_inicio.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      horario.hora_fim.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      horario.tipo_aula?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      horario.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      horario.instrutor?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      "",
+      (horario.dia_semana?.nome?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+      (horario.hora_inicio?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+      (horario.hora_fim?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+      (horario.tipo_aula?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+      (horario.nome?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+      (horario.instrutor?.toLowerCase() || "").includes(searchTerm.toLowerCase()),
   )
 
   // Função para obter o nome do tipo de aula
@@ -245,12 +283,27 @@ export default function AdminHorariosPage() {
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Instrutor</label>
-              <Input
-                type="text"
+              <Select
                 value={novoHorario.instrutor}
-                onChange={(e) => setNovoHorario({ ...novoHorario, instrutor: e.target.value })}
-                placeholder="Nome do instrutor"
-              />
+                onValueChange={(value) => setNovoHorario({ ...novoHorario, instrutor: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um instrutor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {instrutores.length > 0 ? (
+                    instrutores.map((instrutor) => (
+                      <SelectItem key={instrutor.id} value={instrutor.nome}>
+                        {instrutor.nome}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="none" disabled>
+                      Nenhum instrutor disponível
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <div className="mt-4 flex justify-end">

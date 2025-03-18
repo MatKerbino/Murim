@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -14,7 +14,6 @@ import { ToastAction } from "@/components/ui/toast"
 import { MapPin, Phone, Mail, Clock, AlertCircle, CheckCircle } from "lucide-react"
 import { contatoService } from "@/lib/contato-service"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { headers } from "next/headers"
 
 export default function ContatoPage() {
   const [formData, setFormData] = useState({
@@ -145,6 +144,8 @@ export default function ContatoPage() {
 
     try {
       // Enviar para a API
+      // Aqui estamos enviando o telefone como string sem formatação (números apenas)
+      // para evitar problemas com a validação no backend
       await contatoService.enviarContato({
         nome: formData.nome,
         email: formData.email,
@@ -170,43 +171,36 @@ export default function ContatoPage() {
         assunto: "",
         mensagem: "",
       })
-    } catch (error) {
+    } catch (error: any) { // Tipando o error como any para lidar com os erros
       console.error("Erro ao enviar mensagem:", error)
 
       // Tratar erros específicos
-      if (error.errors) {
-        // Erros de validação por campo
-        const newErrors: Record<string, string> = {}
-
-        if (error.errors.nome) {
-          newErrors.nome = error.errors.nome
-        }
-
-        if (error.errors.email) {
-          newErrors.email = error.errors.email
-        }
-
-        if (error.errors.telefone) {
-          newErrors.telefone = error.errors.telefone
-        }
-
-        if (error.errors.assunto) {
-          newErrors.assunto = error.errors.assunto
-        }
-
-        if (error.errors.mensagem) {
-          newErrors.mensagem = error.errors.mensagem
-        }
-
-        if (Object.keys(newErrors).length > 0) {
-          setErrors(newErrors)
+      if (error.response && error.response.data) {
+        const responseData = error.response.data;
+        
+        if (responseData.errors) {
+          // Erros de validação por campo
+          const newErrors: Record<string, string> = {}
+          
+          Object.entries(responseData.errors).forEach(([field, messages]: [string, any]) => {
+            if (Array.isArray(messages) && messages.length > 0) {
+              newErrors[field] = messages[0];
+            }
+          });
+          
+          if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+          } else {
+            // Erro geral
+            setApiError(responseData.message || "Não foi possível enviar sua mensagem. Tente novamente mais tarde.");
+          }
         } else {
           // Erro geral
-          setApiError(error.message || "Não foi possível enviar sua mensagem. Tente novamente mais tarde.")
+          setApiError(responseData.message || "Não foi possível enviar sua mensagem. Tente novamente mais tarde.");
         }
       } else {
-        // Erro geral
-        setApiError(error.message || "Não foi possível enviar sua mensagem. Tente novamente mais tarde.")
+        // Erro genérico ou de rede
+        setApiError("Não foi possível conectar ao servidor. Verifique sua conexão ou tente novamente mais tarde.");
       }
     } finally {
       setIsSubmitting(false)

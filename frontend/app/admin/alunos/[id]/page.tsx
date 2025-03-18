@@ -1,5 +1,6 @@
 "use client"
 
+import React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -34,7 +35,8 @@ export default function VisualizarAlunoPage({ params }: { params: { id: string }
       setIsLoading(true)
       setError(null)
       try {
-        const alunoData = await alunosService.getAluno(Number.parseInt(params.id))
+        const id = React.use(params).id
+        const alunoData = await alunosService.getAluno(Number.parseInt(id))
         setAluno(alunoData)
 
         if (alunoData.planoId) {
@@ -49,8 +51,9 @@ export default function VisualizarAlunoPage({ params }: { params: { id: string }
       }
     }
 
+    const id = React.use(params).id
     loadData()
-  }, [params.id])
+  }, [params])
 
   if (isLoading) {
     return (

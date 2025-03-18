@@ -16,62 +16,39 @@ import { ErrorMessage } from "@/components/ui/error-message"
 import { useToast } from "@/hooks/use-toast"
 import { dicasAdminService } from "@/lib/dicas-admin-service"
 
-export default function EditarDicaPage({ params }: { params: { id: string } }) {
+export default function NovaDicaPage() {
   const router = useRouter()
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [categorias, setCategorias] = useState<any[]>([])
   const [formData, setFormData] = useState({
-    id: 0,
     titulo: "",
     descricao: "", // Campo adicionado
     conteudo: "",
     categoria_id: "",
-    imagem: "",
+    imagem: null as File | null,
     publicado: true,
     destaque: false,
   })
 
   useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true)
-      setError(null)
+    const loadCategorias = async () => {
       try {
-        const id = params.id
-        const [dicaData, categoriasData] = await Promise.all([
-          dicasAdminService.getDica(Number(id)),
-          dicasAdminService.getCategorias(),
-        ])
-
-        setFormData({
-          id: dicaData.id,
-          titulo: dicaData.titulo,
-          descricao: dicaData.descricao || "", // Garantir que o campo exista
-          conteudo: dicaData.conteudo,
-          categoria_id: dicaData.categoria_id.toString(),
-          imagem: dicaData.imagem || "",
-          publicado: dicaData.publicado === 1 || dicaData.publicado === true,
-          destaque: dicaData.destaque === 1 || dicaData.destaque === true,
-        })
-
-        setCategorias(categoriasData)
+        const data = await dicasAdminService.getCategorias()
+        setCategorias(data)
       } catch (error) {
-        console.error("Erro ao carregar dados:", error)
-        setError("Não foi possível carregar os dados da dica. Tente novamente mais tarde.")
+        console.error("Erro ao carregar categorias:", error)
         toast({
           variant: "destructive",
           title: "Erro",
-          description: "Não foi possível carregar os dados da dica. Tente novamente mais tarde.",
+          description: "Não foi possível carregar as categorias. Tente novamente mais tarde.",
         })
-      } finally {
-        setIsLoading(false)
       }
     }
 
-    loadData()
-  }, [params.id, toast])
+    loadCategorias()
+  }, [toast])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -86,8 +63,8 @@ export default function EditarDicaPage({ params }: { params: { id: string } }) {
     setFormData((prev) => ({ ...prev, [name]: checked }))
   }
 
-  const handleImageChange = (url: string) => {
-    setFormData((prev) => ({ ...prev, imagem: url }))
+  const handleImageChange = (file: File | null) => {
+    setFormData((prev) => ({ ...prev, imagem: file }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -102,51 +79,43 @@ export default function EditarDicaPage({ params }: { params: { id: string } }) {
     }
 
     try {
-      await dicasAdminService.updateDica(formData.id, {
-        titulo: formData.titulo,
-        descricao: formData.descricao, // Campo adicionado
-        conteudo: formData.conteudo,
-        categoria_id: Number(formData.categoria_id),
-        imagem: formData.imagem,
-        publicado: formData.publicado ? 1 : 0,
-        destaque: formData.destaque ? 1 : 0,
-      })
+      const formDataObj = new FormData()
+      formDataObj.append("titulo", formData.titulo)
+      formDataObj.append("descricao", formData.descricao) // Campo adicionado
+      formDataObj.append("conteudo", formData.conteudo)
+      formDataObj.append("categoria_id", formData.categoria_id)
+      formDataObj.append("publicado", formData.publicado ? "1" : "0")
+      formDataObj.append("destaque", formData.destaque ? "1" : "0")
+
+      if (formData.imagem) {
+        formDataObj.append("imagem", formData.imagem)
+      }
+
+      await dicasAdminService.createDica(formDataObj)
 
       toast({
         title: "Sucesso",
-        description: "Dica atualizada com sucesso!",
+        description: "Dica criada com sucesso!",
       })
 
       router.push("/admin/dicas")
     } catch (error) {
-      console.error("Erro ao atualizar dica:", error)
-      setError("Ocorreu um erro ao atualizar a dica. Por favor, tente novamente.")
+      console.error("Erro ao criar dica:", error)
+      setError("Ocorreu um erro ao criar a dica. Por favor, tente novamente.")
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "Não foi possível atualizar a dica. Verifique os dados e tente novamente.",
+        description: "Não foi possível criar a dica. Verifique os dados e tente novamente.",
       })
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    )
-  }
-
-  if (error && !formData.id) {
-    return <ErrorMessage title="Erro" message={error} onRetry={() => router.push("/admin/dicas")} />
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight gradient-text">Editar Dica</h1>
+        <h1 className="text-3xl font-bold tracking-tight gradient-text">Nova Dica</h1>
         <Button variant="outline" onClick={() => router.push("/admin/dicas")}>
           Cancelar
         </Button>
@@ -158,7 +127,7 @@ export default function EditarDicaPage({ params }: { params: { id: string } }) {
         <Card>
           <CardHeader>
             <CardTitle>Informações da Dica</CardTitle>
-            <CardDescription>Edite as informações da dica</CardDescription>
+            <CardDescription>Preencha as informações para criar uma nova dica</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-4">
@@ -220,7 +189,7 @@ export default function EditarDicaPage({ params }: { params: { id: string } }) {
 
               <div className="space-y-2">
                 <Label htmlFor="imagem">Imagem de Capa</Label>
-                <ImageUpload value={formData.imagem} onChange={handleImageChange} />
+                <ImageUpload onChange={handleImageChange} />
               </div>
 
               <div className="flex items-center space-x-2">
@@ -247,7 +216,7 @@ export default function EditarDicaPage({ params }: { params: { id: string } }) {
                 Cancelar
               </Button>
               <Button type="submit" className="bg-gradient-murim hover:opacity-90" disabled={isSubmitting}>
-                {isSubmitting ? "Salvando..." : "Salvar Alterações"}
+                {isSubmitting ? "Salvando..." : "Salvar Dica"}
               </Button>
             </div>
           </CardContent>

@@ -21,6 +21,7 @@ import { Plus, Pencil, Trash2, Search } from "lucide-react"
 import { planosService, type Plano } from "@/lib/planos-service"
 import { useToast } from "@/hooks/use-toast"
 import { EmptyState } from "@/components/ui/empty-state"
+import NextImage from "next/image"
 
 export default function PlanosAdminPage() {
   const [planos, setPlanos] = useState<Plano[]>([])
@@ -152,6 +153,7 @@ export default function PlanosAdminPage() {
       valor: 0,
       duracao: 1,
       beneficios: [],
+      imagem: "",
     })
     setIsDialogOpen(true)
   }
@@ -202,6 +204,7 @@ export default function PlanosAdminPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Imagem</TableHead>
                   <TableHead>Nome</TableHead>
                   <TableHead>Descrição</TableHead>
                   <TableHead>Valor</TableHead>
@@ -212,9 +215,27 @@ export default function PlanosAdminPage() {
               <TableBody>
                 {filteredPlanos.map((plano) => (
                   <TableRow key={plano.id}>
+                    <TableCell>
+                      {plano.imagem ? (
+                        <div className="relative h-10 w-10 rounded-md overflow-hidden">
+                          <NextImage
+                            src={plano.imagem || "/placeholder.svg"}
+                            alt={plano.nome}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center">
+                          <NextImage className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell className="font-medium">{plano.nome}</TableCell>
                     <TableCell>{plano.descricao}</TableCell>
-                    <TableCell>R$ {plano.valor.toFixed(2)}</TableCell>
+                    <TableCell>
+                      R$ {typeof plano.valor === "number" ? plano.valor.toFixed(2) : Number(plano.valor).toFixed(2)}
+                    </TableCell>
                     <TableCell>
                       {plano.duracao} {plano.duracao === 1 ? "mês" : "meses"}
                     </TableCell>
@@ -293,6 +314,19 @@ export default function PlanosAdminPage() {
                 type="number"
                 value={currentPlano.duracao || ""}
                 onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="imagem" className="text-right">
+                URL da Imagem
+              </Label>
+              <Input
+                id="imagem"
+                name="imagem"
+                value={currentPlano.imagem || ""}
+                onChange={handleInputChange}
+                placeholder="/images/planos/plano-basico.jpg"
                 className="col-span-3"
               />
             </div>
